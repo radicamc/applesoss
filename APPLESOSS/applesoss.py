@@ -18,10 +18,11 @@ import numpy as np
 from scipy.interpolate import interp2d
 import warnings
 
+from init_ref_file import init_spec_profile
+import plotting
+import utils
+
 from SOSS.dms.soss_centroids import get_soss_centroids
-from SOSS.APPLESOSS import plotting
-from SOSS.APPLESOSS import utils
-from SOSS.dms import soss_ref_files
 
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -128,9 +129,8 @@ class EmpiricalProfile:
         stack_full[-dimy:, :, 1] = np.copy(self.order2)
         stack_full[-dimy:, :, 2] = np.copy(self.order3)
         # Pass to reference file creation.
-        hdulist = soss_ref_files.init_spec_profile(stack_full, self.oversample,
-                                                   self.pad, subarray,
-                                                   filename)
+        hdulist = init_spec_profile(stack_full, self.oversample, self.pad,
+                                    subarray, filename)
         hdu = fits.HDUList(hdulist)
         if filename is None:
             filepattern = 'APPLESOSS_ref_2D_profile_{0}_os{1}_pad{2}.fits'
