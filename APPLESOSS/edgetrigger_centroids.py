@@ -15,8 +15,8 @@ import numpy as np
 
 from astropy.io import fits
 
-from init_ref_file import RefTraceTable
-from edgetrigger_utils import zero_roll, robust_polyfit, get_image_dim
+from APPLESOSS.init_ref_file import RefTraceTable
+from APPLESOSS.edgetrigger_utils import zero_roll, robust_polyfit, get_image_dim
 
 from matplotlib import colors
 import matplotlib.pyplot as plt

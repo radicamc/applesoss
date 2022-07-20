@@ -18,10 +18,10 @@ import numpy as np
 from scipy.interpolate import interp2d
 import warnings
 
-import applesoss_utils
-from edgetrigger_centroids import get_soss_centroids
-from init_ref_file import init_spec_profile
-import plotting
+from APPLESOSS import applesoss_utils
+from APPLESOSS.edgetrigger_centroids import get_soss_centroids
+from APPLESOSS.init_ref_file import init_spec_profile
+from APPLESOSS import plotting
 
 
 warnings.simplefilter(action='ignore', category=RuntimeWarning)

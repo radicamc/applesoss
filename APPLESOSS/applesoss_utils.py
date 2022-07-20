@@ -14,7 +14,7 @@ from tqdm import tqdm
 import warnings
 import webbpsf
 
-import plotting
+from APPLESOSS import plotting
 
 
 def generate_psfs(wave_increment=0.1, npix=400, verbose=0):
