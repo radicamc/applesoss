@@ -18,11 +18,11 @@ import numpy as np
 from scipy.interpolate import interp2d
 import warnings
 
+import applesoss_utils
+from edgetrigger_centroids import get_soss_centroids
 from init_ref_file import init_spec_profile
 import plotting
-import utils
 
-from SOSS.dms.soss_centroids import get_soss_centroids
 
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -141,7 +141,7 @@ class EmpiricalProfile:
     def validate_inputs(self):
         """Validate the input parameters.
         """
-        return utils.validate_inputs(self)
+        return applesoss_utils.validate_inputs(self)
 
 
 def build_empirical_profile(clear, subarray, pad, oversample, wave_increment,
@@ -208,7 +208,7 @@ def build_empirical_profile(clear, subarray, pad, oversample, wave_increment,
         print('  Interpolating bad pixels...', flush=True)
     floor = np.nanpercentile(clear, 0.1)
     clear -= floor
-    clear = utils.replace_badpix(clear, verbose=verbose)
+    clear = applesoss_utils.replace_badpix(clear, verbose=verbose)
 
     # Get the centroid positions for both orders from the data using the
     # edgetrig method.
@@ -233,7 +233,8 @@ def build_empirical_profile(clear, subarray, pad, oversample, wave_increment,
     # is just the wings that need reconstruction. For this, we will use
     # WebbPSF.
     # Generate WebbPSF 1D profiles across a range of wavelengths.
-    psfs = utils.generate_psfs(wave_increment=wave_increment, verbose=verbose)
+    psfs = applesoss_utils.generate_psfs(wave_increment=wave_increment,
+                                         verbose=verbose)
 
     # === First Order ===
     # Construct the first order profile.
@@ -461,7 +462,7 @@ def reconstruct_order(residual, cen, order, psfs, halfwidth, pad, pivot=750,
     new_frame = np.zeros((dimy+pad, dimx))
     new_frame_native = np.zeros((dimy, dimx))
     # Get wavelength calibration.
-    wavecal_x, wavecal_w = utils.get_wave_solution(order=order)
+    wavecal_x, wavecal_w = applesoss_utils.get_wave_solution(order=order)
 
     first_time = True
     if order == 3:
@@ -540,14 +541,15 @@ def reconstruct_order(residual, cen, order, psfs, halfwidth, pad, pivot=750,
     # tilt/spectral resolution of order 1 vs 2 may have some effect here
     # though.
     if order == 2:
-        wavecal_x_o1, wavecal_w_o1 = utils.get_wave_solution(order=1)
+        wavecal_x_o1, wavecal_w_o1 = applesoss_utils.get_wave_solution(order=1)
         for i in range(pivot):
             wave_o2 = wavecal_w[i]
             co1 = cen['order 1']['Y centroid']
             co2 = cen['order 2']['Y centroid'][i]
-            working_prof = utils.interpolate_profile(wave_o2, co2,
-                                                     wavecal_w_o1, o1_prof.T,
-                                                     co1, os_factor=os_factor)
+            working_prof = applesoss_utils.interpolate_profile(wave_o2, co2,
+                                                               wavecal_w_o1,
+                                                               o1_prof.T, co1,
+                                                               os_factor=os_factor)
             new_frame[:, i] = working_prof
 
         # For columns where the centroid is off the detector, reuse the bluest
@@ -572,14 +574,15 @@ def reconstruct_order(residual, cen, order, psfs, halfwidth, pad, pivot=750,
         # centroid leaves the detector.
         stop = np.where(cen['order 3']['Y centroid'] >= dimy+pad)[0][0]
         stop += halfwidth
-        wavecal_x_o2, wavecal_w_o2 = utils.get_wave_solution(order=2)
+        wavecal_x_o2, wavecal_w_o2 = applesoss_utils.get_wave_solution(order=2)
         for i in range(maxi, stop):
             wave_o3 = wavecal_w[i]
             co2 = cen['order 2']['Y centroid']
             co3 = cen['order 3']['Y centroid'][i]
-            working_prof = utils.interpolate_profile(wave_o3, co3,
-                                                     wavecal_w_o2, o2_prof.T,
-                                                     co2, os_factor=os_factor)
+            working_prof = applesoss_utils.interpolate_profile(wave_o3, co3,
+                                                               wavecal_w_o2,
+                                                               o2_prof.T, co2,
+                                                               os_factor=os_factor)
             new_frame[:, i] = working_prof
 
     return new_frame, new_frame_native
@@ -608,8 +611,9 @@ def simulate_wings(w, psfs, halfwidth, verbose=0):
     """
 
     # Get the simulated profile at the desired wavelength.
-    stand = utils.interpolate_profile(w, 0, psfs['Wave'][:, 0], psfs['PSF'],
-                                      np.zeros_like(psfs['Wave'][:, 0]))
+    stand = applesoss_utils.interpolate_profile(w, 0, psfs['Wave'][:, 0],
+                                                psfs['PSF'],
+                                                np.zeros_like(psfs['Wave'][:, 0]))
     psf_size = np.shape(psfs['PSF'])[1]
     # Normalize to a max value of one to match the simulated profile.
     max_val = np.nanpercentile(stand, 99)

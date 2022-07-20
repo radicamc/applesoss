@@ -144,7 +144,7 @@ def interpolate_profile(w, w_cen, wavelengths, psfs, psfs_cen, os_factor=10):
                                    (os_factor*len_psf - 1) + 1),
                        np.arange(len_psf), psfs[up])
     psf_low = np.interp(np.linspace(0, (os_factor*len_psf - 1)/os_factor,
-                                   (os_factor*len_psf - 1) + 1),
+                                    (os_factor*len_psf - 1) + 1),
                         np.arange(len_psf), psfs[low])
     # Shift the profiles to the correct cenntroid
     psf_up = np.interp(np.arange(len_psf*os_factor),

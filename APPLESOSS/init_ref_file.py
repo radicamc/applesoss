@@ -4,10 +4,44 @@
 Created on Wed Nov 04 15:35:32 2020
 
 @author: albert
+
+Routine to initialize a specprofile reference file.
 """
 
 from astropy.io import fits
 from datetime import datetime
+import numpy as np
+import os
+
+
+class RefTraceTable:
+
+    def __init__(self, filenames=None):
+
+        if filenames is None:
+            filenames = {'FULL': 'SOSS_ref_trace_table_FULL.fits.gz',
+                         'SUBSTRIP96': 'SOSS_ref_trace_table_SUBSTRIP96.fits.gz',
+                         'SUBSTRIP256': 'SOSS_ref_trace_table_SUBSTRIP256.fits.gz'}
+
+        self.filenames = filenames
+
+        return
+
+    def __call__(self, column, wavelengths=None, subarray='SUBSTRIP256', order=1):
+
+        if subarray not in ['FULL', 'SUBSTRIP96', 'SUBSTRIP256']:
+            raise ValueError('Unknown subarray: {}'.format(subarray))
+
+        filename = os.path.join(PATH, self.filenames[subarray])
+        trace_table, header, = fits.getdata(filename, header=True, extname='ORDER', extver=order)
+
+        if wavelengths is None:
+            wavelengths = trace_table['WAVELENGTH']
+            values = trace_table[column]
+        else:
+            values = np.interp(wavelengths, trace_table['WAVELENGTH'], trace_table[column], left=np.nan, right=np.nan)
+
+        return wavelengths, values
 
 
 def init_spec_profile(profile_2d, oversample, padding, subarray,
