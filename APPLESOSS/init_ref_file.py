@@ -13,6 +13,8 @@ from datetime import datetime
 import numpy as np
 import os
 
+PATH = './Ref_Files/'
+
 
 class RefTraceTable:
 
