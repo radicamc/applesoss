@@ -140,6 +140,8 @@ class EmpiricalProfile:
             filename = filepattern.format(subarray, self.oversample, self.pad)
         print('Saving to file '+(output_dir + filename))
         hdu.writeto(output_dir + filename, overwrite=True)
+        
+        return filename
 
     def validate_inputs(self):
         """Validate the input parameters.
