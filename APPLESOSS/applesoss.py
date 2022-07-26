@@ -107,7 +107,8 @@ class EmpiricalProfile:
         # Store the spatial profiles as attributes.
         self.order1, self.order2, self.order3 = o1, o2, o3
 
-    def write_specprofile_reference(self, subarray, filename=None):
+    def write_specprofile_reference(self, subarray, output_dir='./',
+                                    filename=None):
         """Write the spatial profiles to a reference file to be injested by
         ATOCA.
 
@@ -115,6 +116,8 @@ class EmpiricalProfile:
         ----------
         subarray : str
             SOSS subarray, either 'FULL', 'SUBSTRIP256', or 'SUBSTRIP96'
+        output_dir : str
+            Directory to which to save file.
         filename : str
             Name of reference file.
         """
@@ -135,8 +138,8 @@ class EmpiricalProfile:
         if filename is None:
             filepattern = 'APPLESOSS_ref_2D_profile_{0}_os{1}_pad{2}.fits'
             filename = filepattern.format(subarray, self.oversample, self.pad)
-        print('Saving to file '+filename)
-        hdu.writeto(filename, overwrite=True)
+        print('Saving to file '+(output_dir + filename))
+        hdu.writeto(output_dir + filename, overwrite=True)
 
     def validate_inputs(self):
         """Validate the input parameters.
@@ -208,7 +211,7 @@ def build_empirical_profile(clear, subarray, pad, oversample, wave_increment,
         print('  Interpolating bad pixels...', flush=True)
     floor = np.nanpercentile(clear, 0.1)
     clear -= floor
-    clear = applesoss_utils.replace_badpix(clear, verbose=verbose)
+    #clear = applesoss_utils.replace_badpix(clear, verbose=verbose)
 
     # Get the centroid positions for both orders from the data using the
     # edgetrig method.
