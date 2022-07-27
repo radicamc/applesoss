@@ -85,7 +85,7 @@ def get_wave_solution(order):
     """
 
     # Get wavelength calibration reference file.
-    wave_soln = 'APPLESOSS/Ref_files/jwst_niriss_wavemap_0013.fits'
+    wave_soln = '/home/radica/GitHub/APPLESOSS/APPLESOSS/Ref_files/jwst_niriss_wavemap_0022.fits'
     wavemap = fits.getdata(wave_soln, order)
     header = fits.getheader(wave_soln, order)
     ovs = header['OVERSAMP']
