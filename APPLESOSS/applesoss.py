@@ -35,6 +35,8 @@ class EmpiricalProfile:
     ----------
     clear : array-like
         SOSS CLEAR exposure data frame.
+    wavemap : str
+        Path to SOSS 2D wavelength solution reference file.
     subarray : str
         NIRISS SOSS subarray identifier. One of 'SUBSTRIP256', 'SUBSTRIP96',
         or 'FULL'.
@@ -59,12 +61,13 @@ class EmpiricalProfile:
         Save spatial profile models to reference file.
     """
 
-    def __init__(self, clear, pad=0, oversample=1):
+    def __init__(self, clear, wavemap, pad=0, oversample=1):
         """Initializer for EmpiricalProfile.
         """
 
         # Initialize input attributes.
         self.clear = clear
+        self.wavemap = wavemap
         self.pad = pad
         self.oversample = oversample
 
@@ -97,8 +100,8 @@ class EmpiricalProfile:
         # Run the empirical spatial profile construction.
         o1, o2, o3 = build_empirical_profile(self.clear, self.subarray,
                                              self.pad, self.oversample,
-                                             wave_increment, halfwidth,
-                                             verbose)
+                                             self.wavemap, wave_increment,
+                                             halfwidth, verbose)
         # Set any niggling negatives to zero (mostly for the bluest end of the
         # second order where things get skrewy).
         for o in [o1, o2, o3]:
@@ -149,8 +152,8 @@ class EmpiricalProfile:
         return applesoss_utils.validate_inputs(self)
 
 
-def build_empirical_profile(clear, subarray, pad, oversample, wave_increment,
-                            halfwidth, verbose):
+def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
+                            wave_increment, halfwidth, verbose):
     """Main procedural function for the empirical spatial profile construction
     module. Calling this function will initialize and run all the required
     subroutines to produce a spatial profile for the first, second, and third
@@ -170,6 +173,8 @@ def build_empirical_profile(clear, subarray, pad, oversample, wave_increment,
     oversample : int
         Oversampling factor. Oversampling will be equal in the spectral and
         spatial directions.
+    wavemap : str
+        Path to SOSS 2D wavelength solution reference file.
     wave_increment : float
         Wavelength step (in µm) for PSF simulations.
     halfwidth : int
@@ -246,7 +251,8 @@ def build_empirical_profile(clear, subarray, pad, oversample, wave_increment,
     if verbose != 0:
         print(' Building the spatial profile models.')
         print('  Starting the first order model...', flush=True)
-    o1_uncontam, o1_native = reconstruct_order(clear, centroids, order=1,
+    o1_uncontam, o1_native = reconstruct_order(clear, centroids,
+                                               wavemap=wavemap, order=1,
                                                psfs=psfs, halfwidth=halfwidth,
                                                pad=0)
     # Add padding to first order spatial axis if necessary.
@@ -260,7 +266,8 @@ def build_empirical_profile(clear, subarray, pad, oversample, wave_increment,
         # Construct the second order profile.
         if verbose != 0:
             print('  Starting the second order trace...')
-        o2_out = reconstruct_order(clear - o1_native, centroids, order=2,
+        o2_out = reconstruct_order(clear - o1_native, centroids,
+                                   wavemap=wavemap, order=2,
                                    psfs=psfs, halfwidth=halfwidth, pad=pad,
                                    o1_prof=o1_uncontam[pad:, :],
                                    verbose=verbose)
@@ -274,8 +281,8 @@ def build_empirical_profile(clear, subarray, pad, oversample, wave_increment,
         if verbose != 0:
             print('  Starting the third order trace...')
         o3_out = reconstruct_order(clear - o1_native - o2_native, centroids,
-                                   order=3, psfs=psfs, pivot=700,
-                                   halfwidth=halfwidth, pad=pad,
+                                   wavemap=wavemap, order=3, psfs=psfs,
+                                   pivot=700, halfwidth=halfwidth, pad=pad,
                                    o2_prof=o2_uncontam[pad:, :],
                                    verbose=verbose)
         o3_uncontam = o3_out[0]
@@ -416,8 +423,9 @@ def pad_spectral_axis(frame, xcens, ycens, pad=0, ref_cols=None,
     return newframe
 
 
-def reconstruct_order(residual, cen, order, psfs, halfwidth, pad, pivot=750,
-                      o1_prof=None, o2_prof=None, os_factor=10, verbose=0):
+def reconstruct_order(residual, cen, order, psfs, halfwidth, pad, wavemap,
+                      pivot=750, o1_prof=None, o2_prof=None, os_factor=10,
+                      verbose=0):
     """Reconstruct the wings of the the spatial profiles using simulated
     WebbPSF PSFs. Will also add padding to the spatial axes of orders 2 and 3,
     where the trace touches the top edge of the detector.
@@ -437,6 +445,8 @@ def reconstruct_order(residual, cen, order, psfs, halfwidth, pad, pivot=750,
         Half-width of the trace in native pixels.
     pad : int
         Amount of padding in native pixels to add to the spatial axis.
+    wavemap : str
+        Path to SOSS 2D wavelength solution reference file.
     pivot : int
         For order 2, minimum spectral pixel value for which a wing
         reconstruction will be attempted. For order 3, the maximum pixel value.
@@ -467,7 +477,8 @@ def reconstruct_order(residual, cen, order, psfs, halfwidth, pad, pivot=750,
     new_frame = np.zeros((dimy+pad, dimx))
     new_frame_native = np.zeros((dimy, dimx))
     # Get wavelength calibration.
-    wavecal_x, wavecal_w = applesoss_utils.get_wave_solution(order=order)
+    wavecal_x, wavecal_w = applesoss_utils.get_wave_solution(wavemap,
+                                                             order=order)
 
     first_time = True
     if order == 3:
@@ -546,7 +557,8 @@ def reconstruct_order(residual, cen, order, psfs, halfwidth, pad, pivot=750,
     # tilt/spectral resolution of order 1 vs 2 may have some effect here
     # though.
     if order == 2:
-        wavecal_x_o1, wavecal_w_o1 = applesoss_utils.get_wave_solution(order=1)
+        wavecal_x_o1, wavecal_w_o1 = applesoss_utils.get_wave_solution(wavemap,
+                                                                       order=1)
         for i in range(pivot):
             wave_o2 = wavecal_w[i]
             co1 = cen['order 1']['Y centroid']
@@ -579,7 +591,8 @@ def reconstruct_order(residual, cen, order, psfs, halfwidth, pad, pivot=750,
         # centroid leaves the detector.
         stop = np.where(cen['order 3']['Y centroid'] >= dimy+pad)[0][0]
         stop += halfwidth
-        wavecal_x_o2, wavecal_w_o2 = applesoss_utils.get_wave_solution(order=2)
+        wavecal_x_o2, wavecal_w_o2 = applesoss_utils.get_wave_solution(wavemap,
+                                                                       order=2)
         for i in range(maxi, stop):
             wave_o3 = wavecal_w[i]
             co2 = cen['order 2']['Y centroid']
@@ -643,10 +656,3 @@ def simulate_wings(w, psfs, halfwidth, verbose=0):
                                       ystart, yend)
 
     return wing, wing2
-
-
-if __name__ == '__main__':
-    clear_data = fits.getdata('Ref_files/simulated_data.fits', 0)
-
-    spat_prof = EmpiricalProfile(clear_data)
-    spat_prof.build_empirical_profile(verbose=1)

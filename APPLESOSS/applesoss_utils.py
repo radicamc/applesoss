@@ -67,12 +67,14 @@ def generate_psfs(wave_increment=0.1, npix=400, verbose=0):
     return psfs
 
 
-def get_wave_solution(order):
+def get_wave_solution(wavemap_file, order):
     """Extract wavelength calibration information from the wavelength solution
     reference file.
 
     Parameters
     ----------
+    wavemap_file : str
+        Path to SOSS 2D wavelength solution reference file.
     order : int
         Diffraction order.
 
@@ -85,9 +87,8 @@ def get_wave_solution(order):
     """
 
     # Get wavelength calibration reference file.
-    wave_soln = '/home/radica/GitHub/APPLESOSS/APPLESOSS/Ref_files/jwst_niriss_wavemap_0022.fits'
-    wavemap = fits.getdata(wave_soln, order)
-    header = fits.getheader(wave_soln, order)
+    wavemap = fits.getdata(wavemap_file, order)
+    header = fits.getheader(wavemap_file, order)
     ovs = header['OVERSAMP']
     pad = header['PADDING']
 
