@@ -218,7 +218,6 @@ def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
         print('  Interpolating bad pixels...', flush=True)
     floor = np.nanpercentile(clear, 0.1)
     clear -= floor
-    #clear = applesoss_utils.replace_badpix(clear, verbose=verbose)
 
     # Get the centroid positions for both orders from the data using the
     # edgetrig method.
