@@ -35,8 +35,8 @@ def generate_psfs(wave_increment=0.1, npix=400, verbose=0):
     # Calculate the number of PSFs to generate based on the SOSS wavelength
     # range and the chosen increment.
     nsteps = int((2.9 - 0.5) / wave_increment)
-    # Estimate time to completion assuming ~5s per PSF.
-    time_frame = int((nsteps * 5) / 60)
+    # Estimate time to completion assuming ~10s per PSF.
+    time_frame = int((nsteps * 10) / 60)
     if verbose != 0:
         print('  Generating {0} PSFs... Expected to take about {1} min(s).'.format(nsteps, time_frame))
     wavelengths = (np.linspace(0.5, 2.9, nsteps) * 1e-6)[::-1]
