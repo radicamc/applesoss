@@ -15,7 +15,6 @@ import numpy as np
 
 from astropy.io import fits
 
-from APPLESOSS.init_ref_file import RefTraceTable
 from APPLESOSS.edgetrigger_utils import zero_roll, robust_polyfit, get_image_dim
 
 from matplotlib import colors
@@ -797,7 +796,7 @@ def build_mask_order3(subarray='SUBSTRIP256', xlim=None, point1=None, point2=Non
     return mask
 
 
-def wavelength_calibration(xpos, order=1, subarray='SUBSTRIP256'):
+def wavelength_calibration(tracetable, xpos, order=1, subarray='SUBSTRIP256'):
     """Find the wavelengths corresponding to a set of x-positions using the
     trace table reference file.
 
@@ -816,8 +815,8 @@ def wavelength_calibration(xpos, order=1, subarray='SUBSTRIP256'):
     try:
         # USE THE REFERENCE FILE IF IT CAN BE FOUND
         # Read the wavelength vs x-position relation from the reference file.
-        ref = RefTraceTable()
-        ref_wavelengths, ref_xpos = ref('X', subarray=subarray, order=order)
+        tt = fits.getdata(tracetable, order)
+        ref_wavelengths, ref_xpos = tt['WAVELENGTH'], tt['X']
 
         # Sort so the reference positions are in ascending order.
         args = np.argsort(ref_xpos)
@@ -841,7 +840,7 @@ def wavelength_calibration(xpos, order=1, subarray='SUBSTRIP256'):
     return wavelengths
 
 
-def calibrate_widths(width_o1, width_o2=None, width_o3=None, subarray='SUBSTRIP256', verbose=False, outdir=None):
+def calibrate_widths(tracetable, width_o1, width_o2=None, width_o3=None, subarray='SUBSTRIP256', verbose=False, outdir=None):
     """Fit an exponential function to the wavelength-width relation, for use obtaining the
     contaminated order 2 trace positions.
 
@@ -884,9 +883,9 @@ def calibrate_widths(width_o1, width_o2=None, width_o3=None, subarray='SUBSTRIP2
 
     # Convert pixel positions to wavelengths for each order.
     x = np.arange(dimx)
-    lba_o1 = wavelength_calibration(x, order=1, subarray=subarray)
-    lba_o2 = wavelength_calibration(x, order=2, subarray=subarray)
-    lba_o3 = wavelength_calibration(x, order=3, subarray=subarray)
+    lba_o1 = wavelength_calibration(tracetable, x, order=1, subarray=subarray)
+    lba_o2 = wavelength_calibration(tracetable, x, order=2, subarray=subarray)
+    lba_o3 = wavelength_calibration(tracetable, x, order=3, subarray=subarray)
 
     # Join data from different orders.
     lba_all = np.concatenate((lba_o1, lba_o2, lba_o3), axis=None)
@@ -934,7 +933,7 @@ def calibrate_widths(width_o1, width_o2=None, width_o3=None, subarray='SUBSTRIP2
     return pars_width
 
 
-def get_soss_centroids(image, mask=None, subarray='SUBSTRIP256', halfwidth=2,
+def get_soss_centroids(image, tracetable, mask=None, subarray='SUBSTRIP256', halfwidth=2,
                        poly_orders=None, apex_order1=None,
                        calibrate=True, verbose=False, outdir=None):
     """Determine the traces positions on a real image (native size) with as few
@@ -1075,7 +1074,7 @@ def get_soss_centroids(image, mask=None, subarray='SUBSTRIP256', halfwidth=2,
 
     if calibrate:
 
-        pars_width = calibrate_widths(w_o1, w_o2_uncont, subarray=subarray, verbose=verbose, outdir=outdir)
+        pars_width = calibrate_widths(tracetable, w_o1, w_o2_uncont, subarray=subarray, verbose=verbose, outdir=outdir)
 
     else:
         # Use pre-computed parameters from the CV3 deepstack.
@@ -1103,7 +1102,7 @@ def get_soss_centroids(image, mask=None, subarray='SUBSTRIP256', halfwidth=2,
     x_o2_top, y_o2_top, w_o2_top, par_o2_top = result
 
     # Convert pixel positions to wavelengths for order 2.
-    lba_o2_top = wavelength_calibration(x_o2_top, order=2, subarray=subarray)
+    lba_o2_top = wavelength_calibration(tracetable, x_o2_top, order=2, subarray=subarray)
 
     # Use the wavelength width relation to obtain the order 2 trace width.
     w_o2_cont = np.where(np.isfinite(w_o2_top), w0 * lba_o2_top**m, np.nan)

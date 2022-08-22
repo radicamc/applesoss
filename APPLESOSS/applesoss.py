@@ -20,7 +20,6 @@ import warnings
 
 from APPLESOSS import applesoss_utils
 from APPLESOSS.edgetrigger_centroids import get_soss_centroids
-from APPLESOSS.init_ref_file import init_spec_profile
 from APPLESOSS import plotting
 
 
@@ -61,13 +60,14 @@ class EmpiricalProfile:
         Save spatial profile models to reference file.
     """
 
-    def __init__(self, clear, wavemap, pad=0, oversample=1):
+    def __init__(self, clear, wavemap, tracetable, pad=0, oversample=1):
         """Initializer for EmpiricalProfile.
         """
 
         # Initialize input attributes.
         self.clear = clear
         self.wavemap = wavemap
+        self.tracetable = tracetable
         self.pad = pad
         self.oversample = oversample
 
@@ -100,8 +100,9 @@ class EmpiricalProfile:
         # Run the empirical spatial profile construction.
         o1, o2, o3 = build_empirical_profile(self.clear, self.subarray,
                                              self.pad, self.oversample,
-                                             self.wavemap, wave_increment,
-                                             halfwidth, verbose)
+                                             self.wavemap, self.tracetable,
+                                             wave_increment, halfwidth,
+                                             verbose)
         # Set any niggling negatives to zero (mostly for the bluest end of the
         # second order where things get skrewy).
         for o in [o1, o2, o3]:
@@ -135,8 +136,9 @@ class EmpiricalProfile:
         stack_full[-dimy:, :, 1] = np.copy(self.order2)
         stack_full[-dimy:, :, 2] = np.copy(self.order3)
         # Pass to reference file creation.
-        hdulist = init_spec_profile(stack_full, self.oversample, self.pad,
-                                    subarray, filename)
+        hdulist = applesoss_utils.init_spec_profile(stack_full,
+                                                    self.oversample, self.pad,
+                                                    subarray, filename)
         hdu = fits.HDUList(hdulist)
         if filename is None:
             filepattern = 'APPLESOSS_ref_2D_profile_{0}_os{1}_pad{2}.fits'
@@ -153,7 +155,7 @@ class EmpiricalProfile:
 
 
 def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
-                            wave_increment, halfwidth, verbose):
+                            tracetable, wave_increment, halfwidth, verbose):
     """Main procedural function for the empirical spatial profile construction
     module. Calling this function will initialize and run all the required
     subroutines to produce a spatial profile for the first, second, and third
@@ -223,7 +225,7 @@ def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
     # edgetrig method.
     if verbose != 0:
         print('  Getting trace centroids...')
-    centroids = get_soss_centroids(clear, subarray=subarray)
+    centroids = get_soss_centroids(clear, tracetable, subarray=subarray)
     if verbose == 3:
         plotting.plot_centroid(clear, centroids)
     clear += floor
