@@ -152,4 +152,4 @@ cython_debug/
 .idea/
 
 # Reference files for testing
-APPLESOSS/Ref_files/*
+applesoss/Ref_files/*

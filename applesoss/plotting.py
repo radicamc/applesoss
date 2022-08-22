@@ -5,7 +5,7 @@ Created on Fri Jan 22 12:03 2021
 
 @author: MCR
 
-File containing all diagnostic plotting functions for the APPLESOSS.
+File containing all diagnostic plotting functions for the applesoss.
 """
 
 import matplotlib.pyplot as plt

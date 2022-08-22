@@ -5,7 +5,7 @@ Created on Thurs Mar 11 14:35 2020
 
 @author: MCR
 
-Miscellaneous utility functions for APPLESOSS.
+Miscellaneous utility functions for applesoss.
 """
 
 from astropy.io import fits
@@ -156,7 +156,7 @@ def init_spec_profile(profile_2d, oversample, padding, subarray,
     hdul = list()
     hdu = fits.PrimaryHDU()
     hdu.header['DATE'] = (datetime.now().strftime('%Y-%m-%dT%H:%M:%S'), 'Date this file was created (UTC)')
-    hdu.header['ORIGIN'] = ('APPLESOSS', 'Orginazation responsible for creating file')
+    hdu.header['ORIGIN'] = ('applesoss', 'Orginazation responsible for creating file')
     hdu.header['TELESCOP'] = ('JWST', 'Telescope used to acquire the data')
     hdu.header['INSTRUME'] = ('NIRISS', 'Instrument used to acquire the data')
     hdu.header['SUBARRAY'] = (subarray, 'Subarray used')

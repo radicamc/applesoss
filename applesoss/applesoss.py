@@ -5,7 +5,7 @@ Created on Fri Mar 19 11:46 2021
 
 @author: MCR
 
-Definitions of the main functions for the APPLESOSS (A Producer of ProfiLEs
+Definitions of the main functions for the applesoss (A Producer of ProfiLEs
 for SOSS) module. This class will be initialized and called by the user to
 create models of the spatial profiles for the first, second, and third order
 SOSS traces, for use as the specprofile reference file required by the ATOCA
@@ -18,9 +18,9 @@ import numpy as np
 from scipy.interpolate import interp2d
 import warnings
 
-from APPLESOSS import applesoss_utils
-from APPLESOSS.edgetrigger_centroids import get_soss_centroids
-from APPLESOSS import plotting
+from applesoss import applesoss_utils
+from applesoss.edgetrigger_centroids import get_soss_centroids
+from applesoss import plotting
 
 
 warnings.simplefilter(action='ignore', category=RuntimeWarning)
@@ -208,7 +208,7 @@ def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
     """
 
     if verbose != 0:
-        print('Starting the APPLESOSS module.\n')
+        print('Starting the applesoss module.\n')
 
     # ========= INITIAL SETUP =========
     # If subarray is FULL - trim down to SUBSTRIP256 and work with that.
