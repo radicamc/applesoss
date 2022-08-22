@@ -5,7 +5,7 @@ Created on Thurs Mar 11 14:35 2020
 
 @author: MCR
 
-Miscellaneous utility functions for APPleSOSS.
+Miscellaneous utility functions for APPLESOSS.
 """
 
 from astropy.io import fits

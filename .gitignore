@@ -151,5 +151,5 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 
-# Wavemap since its large
-APPLESOSS/Ref_files/jwst_niriss_wavemap_0013.fits
+# Reference files for testing
+APPLESOSS/Ref_files/*

@@ -5,7 +5,7 @@ Created on Fri Mar 19 11:46 2021
 
 @author: MCR
 
-Definitions of the main functions for the APPleSOSS (A Producer of ProfiLEs
+Definitions of the main functions for the APPLESOSS (A Producer of ProfiLEs
 for SOSS) module. This class will be initialized and called by the user to
 create models of the spatial profiles for the first, second, and third order
 SOSS traces, for use as the specprofile reference file required by the ATOCA
