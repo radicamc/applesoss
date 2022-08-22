@@ -9,7 +9,7 @@ Definitions of the main functions for the APPLESOSS (A Producer of ProfiLEs
 for SOSS) module. This class will be initialized and called by the user to
 create models of the spatial profiles for the first, second, and third order
 SOSS traces, for use as the specprofile reference file required by the ATOCA
-algorithm.
+algorithm, or alternatively as the PSF weights for an optimal extraction.
 """
 
 
@@ -36,6 +36,8 @@ class EmpiricalProfile:
         SOSS CLEAR exposure data frame.
     wavemap : str
         Path to SOSS 2D wavelength solution reference file.
+    tracetable : str
+        Path to SOSS trace table reference file.
     subarray : str
         NIRISS SOSS subarray identifier. One of 'SUBSTRIP256', 'SUBSTRIP96',
         or 'FULL'.
@@ -177,6 +179,8 @@ def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
         spatial directions.
     wavemap : str
         Path to SOSS 2D wavelength solution reference file.
+    tracetable : str
+        Path to SOSS trace table reference file.
     wave_increment : float
         Wavelength step (in µm) for PSF simulations.
     halfwidth : int
@@ -433,7 +437,7 @@ def reconstruct_order(residual, cen, order, psfs, halfwidth, pad, wavemap,
 
     Parameters
     ----------
-    residual : array-like
+    residual : np.array
         NIRISS/SOSS data frame residual map - either with o1, or both o1 and
         o2 removed.
     cen : dict
