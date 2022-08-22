@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jul 20 09:55 2022
+Created on Wed Nov 04 15:36:22 2020
 
-@author: MCR
+@author: albert, MCR
 
 Utility functions for the edgetrigger algorithm
 """
@@ -98,7 +98,8 @@ def get_image_dim(image, header=None, verbose=False):
     padding
         Amount of padding around the image, in native pixels.
     refpix_mask
-        Boolean array indicating which pixels are lightsensitive (True) and which are reference pixels (False).
+        Boolean array indicating which pixels are lightsensitive (True) and
+        which are reference pixels (False).
 
     :rtype: Tuple(int, int, int, int, int, int, int, array[bool])
     """
@@ -142,7 +143,7 @@ def get_image_dim(image, header=None, verbose=False):
                    'stack X dimension ({:}) for acceptable SOSS arrays')
             raise ValueError(msg.format(dimy, dimx))
 
-        # Create a boolean mask indicating which pixels are not reference pixels.
+        # Create a boolean mask indicating which pixels are not ref pixels.
         refpix_mask = np.ones_like(image, dtype='bool')
         if xnative == 2048:
             # Mask out the left and right columns of reference pixels.
@@ -165,12 +166,16 @@ def get_image_dim(image, header=None, verbose=False):
 
         # Check that the stack respects its intended format.
         if (dimx/xos - 2*padding) not in [2048]:
-            raise ValueError('The header passed is inconsistent with the X dimension of the stack.')
+            msg = 'The header passed is inconsistent with the X dimension ' \
+                  'of the stack.'
+            raise ValueError(msg)
         else:
             xnative = 2048
 
         if (dimy/yos - 2*padding) not in [96, 256, 2048]:
-            raise ValueError('The header passed is inconsistent with the Y dimension of the stack.')
+            msg = 'The header passed is inconsistent with the Y dimension ' \
+                  'of the stack.'
+            raise ValueError(msg)
         else:
             ynative = np.int(dimy/yos - 2*padding)
 
