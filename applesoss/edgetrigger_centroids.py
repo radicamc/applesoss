@@ -147,8 +147,10 @@ def edge_trigger(image, halfwidth=5, yos=1, verbose=False, outdir=None):
         Upper edge of the trace.
     ytrace_min : array[float]
         Lower edge of the trace.
-    ytrace_comb : array[float]
+    ytrace_best : array[float]
         Center of the trace.
+    widths_best : array[float]
+        Widths of the trace.
      """
 
     dimy, dimx = image.shape
@@ -386,22 +388,24 @@ def build_mask_sloped(shape, point1, point2, mask_above=True, verbose=False):
     """Mask pixels above or below the boundary line defined by point1 and
     point2.
 
-    :param shape: tuple containing the intended shape of the mask array.
-    :param point1: the first x, y pair defining the boundary line.
-    :param point2: the second x, y pair defining the boundary line.
-    :param mask_above: if True mask pixels above the boundary line, else mask
-        below.
-    :param verbose: if True be verbose.
+    Parameters
+    ----------
+    shape : tuple[int]
+        Tuple containing the intended shape of the mask array.
+    point1 : list[float]
+        The first x, y pair defining the boundary line.
+    point2 : list[float]
+        The second x, y pair defining the boundary line.
+    mask_above : bool
+        If True mask pixels above the boundary line, else mask below.
+    verbose : bool
+        If True be verbose.
 
-    :type shape: tuple[int]
-    :type point1: list[float]
-    :type point2: list[float]
-    :type mask_above: bool
-    :type verbose: bool
-
-    :returns: mask - A mask the removes a diagonal region along the slope
-        defined by point1 and point2.
-    :rtype: array[bool]
+    Returns
+    -------
+    mask : array[bool]
+        A mask the removes a diagonal region along the slope defined by point1
+        and point2.
     """
 
     dimy, dimx = shape
@@ -438,16 +442,18 @@ def build_mask_256(subarray='SUBSTRIP256', apex_order1=None):
     everything but the SUBSTRIP256 region. When apex_order1 is given rows from
     apex_order1 - 40 to apex_order1 + 216 are kept instead.
 
-    :param subarray: the subarray for which to build a mask.
-    :param apex_order1: The y-position of the order1 apex at 1.3 microns, in
-        the given subarray.
+    Parameters
+    ----------
+    subarray : str
+        The subarray for which to build a mask.
+    apex_order1 : float
+        The y-position of the order1 apex at 1.3 microns, in the given
+        subarray.
 
-    :type subarray: str
-    :type apex_order1: float
-
-    :returns: mask_256 - A mask that removes any area not related to the trace
-        of the target.
-    :rtype: array[bool]
+    Returns
+    -------
+    mask_256 : array[bool]
+        A mask that removes any area not related to the trace of the target.
     """
 
     dimx = 2048
@@ -464,7 +470,6 @@ def build_mask_256(subarray='SUBSTRIP256', apex_order1=None):
         raise ValueError(msg.format(subarray))
 
     if apex_order1 is None:
-
         apex_order1 = 40  # Assuming SUBSTRIP256.
 
         if subarray == 'FULL':
@@ -495,22 +500,23 @@ def build_mask_trace(ytrace, subarray='SUBSTRIP256', halfwidth=30,
     width = 2*halfwidth will be masked. Optionally extend_above and
     extend_below can be used to mask all pixels above or below the trace.
 
-    :param ytrace: the trace y-position at each column, must have
-        shape = (2048,).
-    :param subarray: the subarray for which to build a mask.
-    :param halfwidth: the size of the window to mask around the trace.
-    :param extend_below: if True mask all pixels above the trace.
-    :param extend_above: if True mask all pixels below the trace.
+    Parameters
+    ----------
+    ytrace : array[float]
+        The trace y-position at each column, must have shape = (2048,).
+    subarray : str
+        The subarray for which to build a mask.
+    halfwidth : float
+        The size of the window to mask around the trace.
+    extend_below : bool
+        If True mask all pixels above the trace.
+    extend_above : bool
+        If True mask all pixels below the trace.
 
-    :type ytrace: array[float]
-    :type subarray: str
-    :type halfwidth: float
-    :type extend_below: bool
-    :type extend_above: bool
-
-    :returns: mask_trace - A mask that removes an area centered on the given
-        trace positions.
-    :rtype: array[bool]
+    Returns
+    -------
+    mask_trace : array[bool]
+        A mask that removes an area centered on the given trace positions.
     """
 
     dimx = 2048
@@ -565,25 +571,26 @@ def build_mask_order2_contaminated(ytrace_o1, ytrace_o3,
     2 trace and everything above and all pixels blue-ward (to the right) of
     xlim.
 
-    :param ytrace_o1: y position of the order 1 trace at every column.
-    :param ytrace_o3: y position of the order 3 trace at every column.
-    :param subarray: the subarray for which to build a mask.
-    :param halfwidth_o1: the size of the window to mask around the order 1
-        trace.
-    :param halfwidth_o3: the size of the window to mask around the order 3
-        trace.
-    :param xlim: the boundary for masking pixels blue-ward (to the right).
+    Parameters
+    ----------
+    ytrace_o1 : array[float]
+        Y position of the order 1 trace at every column.
+    ytrace_o3 : array[float]
+        Y position of the order 3 trace at every column.
+    subarray : str
+        The subarray for which to build a mask.
+    halfwidth_o1 : float
+        The size of the window to mask around the order 1 trace.
+    halfwidth_o3 : float
+        The size of the window to mask around the order 3 trace.
+    xlim : float
+        The boundary for masking pixels blue-wards (to the right).
 
-    :type ytrace_o1: array[float]
-    :type ytrace_o3: array[float]
-    :type subarray: str
-    :type halfwidth_o1: float
-    :type halfwidth_o3: float
-    :type xlim: float
-
-    :returns: mask - A mask that removes everything but the contaminated part
-              of the order 2 trace.
-    :rtype: array[bool]
+    Returns
+    -------
+    mask : array[bool]
+        A mask that removes everything but the contaminated part of the order
+        2 trace.
     """
 
     dimx = 2048
@@ -619,7 +626,7 @@ def build_mask_order2_contaminated(ytrace_o1, ytrace_o3,
 
 
 def build_mask_order2_uncontaminated(ytrace_o1, ytrace_o3,
-                                     subarray='SUBSTRIP256',  halfwidth_o1=25,
+                                     subarray='SUBSTRIP256', halfwidth_o1=25,
                                      halfwidth_o3=15, xlims=None, point1=None,
                                      point2=None, apex_order1=None):
     """Build a mask that isolates the uncontaminated part of the order 2 trace.
@@ -627,32 +634,33 @@ def build_mask_order2_uncontaminated(ytrace_o1, ytrace_o3,
     2 trace and everything above, all pixels outside of the range defined by
     xlims and all pixels below the line defined by point 1 and point 2.
 
-    :param ytrace_o1: y position of the order 1 trace at every column.
-    :param ytrace_o3: y position of the order 3 trace at every column.
-    :param subarray: the subarray for which to build a mask.
-    :param halfwidth_o1: the size of the window to mask around the order 1
-        trace.
-    :param halfwidth_o3: the size of the window to mask around the order 3
-        trace.
-    :param xlims:
-    :param point1: the first x, y pair defining the boundary line.
-    :param point2: the second x, y pair defining the boundary line.
-    :param apex_order1: The y-position of the order1 apex at 1.3 microns, in
-        the given subarray.
+    Parameters
+    ----------
+    ytrace_o1 : array[float]
+        Y position of the order 1 trace at every column.
+    ytrace_o3 : array[float]
+        Y position of the order 3 trace at every column.
+    subarray : str
+        The subarray for which to build a mask.
+    halfwidth_o1 : float
+        The size of the window to mask around the order 1 trace.
+    halfwidth_o3 : float
+        The size of the window to mask around the order 3 trace.
+    xlims : list[float]
+        X-pixel limits.
+    point1 : list[float]
+        The first x, y pair defining the boundary line.
+    point2 : list[float]
+        The second x, y pair defining the boundary line.
+    apex_order1 : float, np.ndarray[float]
+        The y-position of the order1 apex at 1.3 microns, in the given
+        subarray.
 
-    :type ytrace_o1: array[float]
-    :type ytrace_o3: array[float]
-    :type subarray: str
-    :type halfwidth_o1: float
-    :type halfwidth_o3: float
-    :type xlims: list[float]
-    :type point1: list[float]
-    :type point2: list[float]
-    :type apex_order1: float
-
-    :returns: mask - A mask that removes everything but the uncontaminated part
-        of the order 2 trace.
-    :rtype: array[bool]
+    Returns
+    -------
+    mask : array[bool]
+        A mask that removes everything but the uncontaminated part of the
+        order 2 trace.
     """
 
     dimx = 2048
@@ -675,7 +683,6 @@ def build_mask_order2_uncontaminated(ytrace_o1, ytrace_o3,
         raise ValueError(msg)
 
     elif (point1 is None) & (point2 is None):
-
         # If no points were given use default values.
         point1 = [1249, 31]  # Assuming SUBSTRIP256.
         point2 = [1911, 253]  # Assuming SUBSTRIP256.
@@ -690,12 +697,10 @@ def build_mask_order2_uncontaminated(ytrace_o1, ytrace_o3,
 
         # If apex_order1 was given shift the points as needed.
         if apex_order1 is not None:
-
             apex_default = 40  # Assuming SUBSTRIP256.
 
             if subarray == 'FULL':
                 apex_default += 1792
-
             if subarray == 'SUBSTRIP96':
                 apex_default += -10
 
@@ -703,7 +708,6 @@ def build_mask_order2_uncontaminated(ytrace_o1, ytrace_o3,
             offset = apex_order1 - apex_default
             point1[1] += offset
             point2[1] += offset
-
     else:
         msg = ('Using user-provided values for point1 and point2, '
                'apex_order1 will be ignored.')
@@ -720,7 +724,8 @@ def build_mask_order2_uncontaminated(ytrace_o1, ytrace_o3,
                                      extend_above=True)
 
     # Mask what is on the left side where orders 1 and 2 are well blended
-    mask_vertical = build_mask_vertical((dimy, dimx), xlims, mask_between=False)
+    mask_vertical = build_mask_vertical((dimy, dimx), xlims,
+                                        mask_between=False)
 
     # Mask the corner below the order 2 trace to remove the wings of the
     # order 1 trace.
@@ -736,25 +741,29 @@ def build_mask_order2_uncontaminated(ytrace_o1, ytrace_o3,
 def build_mask_order3(subarray='SUBSTRIP256', xlim=None, point1=None,
                       point2=None, apex_order1=None):
     """Builds a mask that isolates the order 3 trace.
-    This done by masking all pixels blue-ward (to the right) of xlim where the
+    This done by masking all pixels blue-wards (to the right) of xlim where the
     order 3 transmission goes to zero, and all pixels below the line defined
     by point1 and point2 (the order1 trace and order 2 trace).
 
-    :param subarray: the subarray for which to build a mask.
-    :param xlim: the boundary for masking pixels blue-ward (to the right).
-    :param point1: the first x, y pair defining the boundary line.
-    :param point2: the seconf x, y pair defining the boundary line.
-    :param apex_order1: The y-position of the order1 apex at 1.3 microns, in
-                        the given subarray.
 
-    :type subarray: str
-    :type xlim: float
-    :type point1: list[float]
-    :type point2: list[float]
-    :type apex_order1: float
+    Parameters
+    ----------
+    subarray : str
+        The subarray for which to build a mask.
+    xlim : float
+        The boundary for masking pixels blue-ward (to the right).
+    point1 : list[float]
+        The first x, y pair defining the boundary line.
+    point2 : list[float]
+        The second x, y pair defining the boundary line.
+    apex_order1 : float, np.ndarray[float]
+        The y-position of the order1 apex at 1.3 microns, in the given
+        subarray.
 
-    :returns: mask - A mask that removes everything but the order 3 trace.
-    :rtype: array[bool]
+    Returns
+    -------
+    mask : array[bool]
+        A mask that removes everything but the order 3 trace.
     """
 
     dimx = 2048
@@ -770,7 +779,6 @@ def build_mask_order3(subarray='SUBSTRIP256', xlim=None, point1=None,
         raise ValueError(msg.format(subarray))
 
     if subarray == 'SUBSTRIP96':
-
         # Create an empty mask.
         mask = np.zeros((dimy, dimx), dtype='bool')
 
@@ -787,7 +795,6 @@ def build_mask_order3(subarray='SUBSTRIP256', xlim=None, point1=None,
         raise ValueError(msg)
 
     elif (point1 is None) & (point2 is None):
-
         # If no points were given use default values.
         point1 = [0, 132]  # Assuming SUBSTRIP256.
         point2 = [1000, 163]  # Assuming SUBSTRIP256.
@@ -840,20 +847,23 @@ def build_mask_order3(subarray='SUBSTRIP256', xlim=None, point1=None,
     return mask
 
 
-def wavelength_calibration(tracetable, xpos, order=1, subarray='SUBSTRIP256'):
+def wavelength_calibration(tracetable, xpos, order=1):
     """Find the wavelengths corresponding to a set of x-positions using the
     trace table reference file.
 
-    :param xpos: the array of x-positions to calibrate.
-    :param order: the trace order the x-positions correspond to.
-    :param subarray: the subarray the x-positions correspond to.
+    Parameters
+    ----------
+    tracetable : str
+        Path to SOSS tracetable reference file.
+    xpos : array[float]
+        The array of x-positions to calibrate.
+    order : int
+        The trace order the x-positions correspond to.
 
-    :type xpos: array[float]
-    :type order: int
-    :type subarray: str
-
-    :returns: wavelengths - an array of wavelengths corresponding to xpos.
-    :rtype: array[float]
+    Returns
+    -------
+    wavelengths : array[float]
+        An array of wavelengths corresponding to xpos.
     """
 
     try:
@@ -874,10 +884,10 @@ def wavelength_calibration(tracetable, xpos, order=1, subarray='SUBSTRIP256'):
         if order == 1:
             dispersion = -0.9718  # nm/pixel
             w0 = 2.833
-        if order == 2:
+        elif order == 2:
             dispersion = -0.467
             w0 = 1.423
-        if order == 3:
+        else:
             dispersion = -0.310
             w0 = 0.956
         wavelengths = w0 + xpos * (dispersion / 1000)
@@ -886,28 +896,30 @@ def wavelength_calibration(tracetable, xpos, order=1, subarray='SUBSTRIP256'):
 
 
 def calibrate_widths(tracetable, width_o1, width_o2=None, width_o3=None,
-                     subarray='SUBSTRIP256', verbose=False, outdir=None):
+                     verbose=False, outdir=None):
     """Fit an exponential function to the wavelength-width relation, for use
     obtaining the contaminated order 2 trace positions.
 
-    :param width_o1: The order 1 trace width at each column, must have
-        shape = (2048,).
-    :param width_o2: The order 2 trace width at each column, must have
-        shape = (2048,).
-    :param width_o3: The order 3 trace width at each column, must have
-        shape = (2048,).
-    :param subarray: The subarray for which to build a mask.
-    :param verbose: If set True some diagnostic plots will be made.
+    Parameters
+    ----------
+    tracetable : str
+        Path to SOSS tracetable reference file.
+    width_o1 : array[float]
+        The order 1 trace width at each column, must have shape = (2048,).
+    width_o2 : array[float]
+        The order 2 trace width at each column, must have shape = (2048,).
+    width_o3 : array[float]
+        The order 3 trace width at each column, must have shape = (2048,).
+    verbose : bool
+        If True some diagnostic plots will be made.
+    outdir : str
+        Directry to which to save results.
 
-    :type width_o1: array[float]
-    :type width_o2: array[float]
-    :type width_o3: array[float]
-    :type subarray: str
-    :type verbose: bool
-
-    :returns: pars_width - a list containing the best-fit parameters for the
-        wavelength-width relation.
-    :rtype list[float]
+    Returns
+    -------
+    pars_width : list[float]
+        List containing the best-fit parameters for the wavelength-width
+        relation.
     """
 
     dimx = 2048
@@ -933,9 +945,9 @@ def calibrate_widths(tracetable, width_o1, width_o2=None, width_o3=None,
 
     # Convert pixel positions to wavelengths for each order.
     x = np.arange(dimx)
-    lba_o1 = wavelength_calibration(tracetable, x, order=1, subarray=subarray)
-    lba_o2 = wavelength_calibration(tracetable, x, order=2, subarray=subarray)
-    lba_o3 = wavelength_calibration(tracetable, x, order=3, subarray=subarray)
+    lba_o1 = wavelength_calibration(tracetable, x, order=1)
+    lba_o2 = wavelength_calibration(tracetable, x, order=2)
+    lba_o3 = wavelength_calibration(tracetable, x, order=3)
 
     # Join data from different orders.
     lba_all = np.concatenate((lba_o1, lba_o2, lba_o3), axis=None)
@@ -943,11 +955,11 @@ def calibrate_widths(tracetable, width_o1, width_o2=None, width_o3=None,
 
     # Fit the wavelength vs width of order 1 and 2 using an exponential model.
     mask = np.isfinite(width_all) & np.isfinite(lba_all)
-    pars_width = robust_polyfit(np.log(lba_all[mask]), np.log(width_all[mask]), 1)
+    pars_width = robust_polyfit(np.log(lba_all[mask]),
+                                np.log(width_all[mask]), 1)
 
     # Make a figure of the trace width versus the wavelength
     if verbose:
-
         # Evalaute the best-fit model.
         lba_fit = np.linspace(np.nanmin(lba_all), np.nanmax(lba_all), 101)
         w0, m = np.exp(pars_width[1]), pars_width[0]  # w = w0 * lba^m
@@ -976,7 +988,8 @@ def calibrate_widths(tracetable, width_o1, width_o2=None, width_o3=None,
 
         plt.tight_layout()
 
-        if outdir is not None: plt.savefig(outdir+'/soss_centroids_calibrate_width.png')
+        if outdir is not None:
+            plt.savefig(outdir+'/soss_centroids_calibrate_width.png')
         plt.show()
         plt.close()
 
@@ -986,44 +999,49 @@ def calibrate_widths(tracetable, width_o1, width_o2=None, width_o3=None,
 def get_soss_centroids(image, tracetable, mask=None, subarray='SUBSTRIP256',
                        halfwidth=2, poly_orders=None, apex_order1=None,
                        calibrate=True, verbose=False, outdir=None):
-    """Determine the traces positions on a real image (native size) with as few
-    assumptions as possible using the 'edge trigger' method.
-
+    """Determine the traces positions on a real image (native size) with as
+    few assumptions as possible using the 'edge trigger' method.
     The algorithm assumes:
     1) The brightest order is order 1 and the target order 1 is the brightest
         of all order 1 traces present.
     2) Order 2 has a minimum in transmission between ~1.0 and ~1.2 microns.
     3) Order 2 widths are the same as order 1 width for the same wavelengths.
 
-    :param image: A 2D image of the detector.
-    :param mask: A boolean array of the same shape as image. Pixels
-        corresponding to True values will be masked.
-    :param subarray: the subarray for which to build a mask.
-    :param halfwidth: the size of the window used when computing the
-        derivatives of the 'edge trigger' method.
-    :param poly_orders: Dictionary of polynomial orders to fit to the
-        extracted trace positions for each spectral order.
-    :param apex_order1: The y-position of the order1 apex at 1.3 microns, in
-        the given subarray. A rough estimate is sufficient as it is only used
-        to mask rows when subarray='FULL' to ensure that the target of
-        interest is detected instead of a field target.
-    :param calibrate: If True model the wavelength trace width relation,
-        otherwise use the CV3 parameters. Default is True.
-    :param verbose: If set True some diagnostic plots will be made. Default is
-        False.
+    Parameters
+    ----------
+    image : array[float]
+        A 2D image of the detector.
+    tracetable : str
+        Path to SOSS tracetable reference file.
+    mask : array[bool]
+        A boolean array of the same shape as image. Pixels corresponding to
+        True values will be masked.
+    subarray : str
+        The subarray for which to build a mask.
+    halfwidth : int
+        The size of the window used when computing the derivatives of the
+        'edge trigger' method.
+    poly_orders : dict
+        Dictionary of polynomial orders to fit to the extracted trace
+        positions for each spectral order.
+    apex_order1 : float
+        The y-position of the order1 apex at 1.3 microns, in the given
+        subarray. A rough estimate is sufficient as it is only used to mask
+        rows when subarray='FULL' to ensure that the target of interest is
+        detected instead of a field target.
+    calibrate : bool
+        If True model the wavelength trace width relation, otherwise use the
+        CV3 parameters. Default is True.
+    verbose : bool
+        If set True some diagnostic plots will be made. Default is False.
+    outdir : str
+        Directory to which to save results.
 
-    :type image: array[float]
-    :type mask: array[bool]
-    :type subarray: str
-    :type halfwidth: int
-    :type poly_orders: dict
-    :type apex_order1: float
-    :type calibrate: bool
-    :type verbose: bool
-
-    :returns: trace_dict - A dictionary containing the trace x, y, width and
-        polynomial fit parameters for each order.
-    :rtype: dict
+    Returns
+    -------
+    trace_dict : dict
+        A dictionary containing the trace x, y, width and polynomial fit
+        parameters for each order.
     """
 
     default_orders = {'order 1': 11,
@@ -1136,8 +1154,7 @@ def get_soss_centroids(image, tracetable, mask=None, subarray='SUBSTRIP256',
 
     if calibrate:
         pars_width = calibrate_widths(tracetable, w_o1, w_o2_uncont,
-                                      subarray=subarray, verbose=verbose,
-                                      outdir=outdir)
+                                      verbose=verbose, outdir=outdir)
 
     else:
         # Use pre-computed parameters from the CV3 deepstack.
@@ -1167,8 +1184,7 @@ def get_soss_centroids(image, tracetable, mask=None, subarray='SUBSTRIP256',
     x_o2_top, y_o2_top, w_o2_top, par_o2_top = result
 
     # Convert pixel positions to wavelengths for order 2.
-    lba_o2_top = wavelength_calibration(tracetable, x_o2_top, order=2,
-                                        subarray=subarray)
+    lba_o2_top = wavelength_calibration(tracetable, x_o2_top, order=2)
 
     # Use the wavelength width relation to obtain the order 2 trace width.
     w_o2_cont = np.where(np.isfinite(w_o2_top), w0 * lba_o2_top**m, np.nan)
@@ -1195,7 +1211,6 @@ def get_soss_centroids(image, tracetable, mask=None, subarray='SUBSTRIP256',
         y_o2 = np.polyval(par_o2, x_o2)
 
     if verbose:
-
         # Determine an appropriate figure size.
         nrows, ncols = image.shape
 
@@ -1209,25 +1224,26 @@ def get_soss_centroids(image, tracetable, mask=None, subarray='SUBSTRIP256',
         # Make a figure showing how the order 2 trace was built from segments
         # A and B.
         plt.figure(figsize=figsize)
-
         plt.title('Order 2 Trace Positions')
 
-        plt.imshow(image, origin='lower', cmap='inferno', norm=colors.LogNorm(), aspect=aspect)
+        plt.imshow(image, origin='lower', cmap='inferno',
+                   norm=colors.LogNorm(), aspect=aspect)
 
         plt.plot(x_o2_cont, y_o2_cont, color='red', label='Contaminated')
-        plt.plot(x_o2_uncont, y_o2_uncont, color='navy', label='Uncontaminated')
+        plt.plot(x_o2_uncont, y_o2_uncont, color='navy',
+                 label='Uncontaminated')
         plt.plot(x_o2, y_o2, color='black', label='Polynomial Fit')
 
         plt.xlabel('Spectral Pixel', fontsize=14)
         plt.ylabel('Spatial Pixel', fontsize=14)
         plt.legend(fontsize=12)
-
         plt.xlim(-0.5, ncols - 0.5)
         plt.ylim(-0.5, nrows - 0.5)
 
         plt.tight_layout()
 
-        if outdir is not None: plt.savefig(outdir+'/soss_centroid_order2tracepositions.png')
+        if outdir is not None:
+            plt.savefig(outdir+'/soss_centroid_order2tracepositions.png')
         plt.show()
         plt.close()
 
