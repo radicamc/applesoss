@@ -12,7 +12,6 @@ SOSS traces, for use as the specprofile reference file required by the ATOCA
 algorithm, or alternatively as the PSF weights for an optimal extraction.
 """
 
-
 from astropy.io import fits
 import numpy as np
 from scipy.interpolate import interp2d
@@ -256,9 +255,9 @@ def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
     if verbose != 0:
         print(' Building the spatial profile models.')
         print('  Starting the first order model...', flush=True)
-    o1_results = reconstruct_order(clear, centroids, wavemap=wavemap, order=1,
-                                   psfs=psfs, halfwidth=halfwidth, pad=0)
-    o1_uncontam, o1_nopad, o1_rect = o1_results
+    o1_results = reconstruct_order(clear, centroids, order=1, psfs=psfs,
+                                   halfwidth=halfwidth, pad=0, wavemap=wavemap)
+    o1_uncontam, o1_rect = o1_results
     # Add padding to first order spatial axis if necessary.
     if pad != 0:
         o1_uncontam = np.pad(o1_uncontam, ((pad, pad), (0, 0)), mode='edge')
@@ -266,28 +265,32 @@ def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
     # If the subarray is SUBSTRIP96, this is all we can do. However, for
     # SUBSTRIP256 we can reconstruct the second and third orders as well.
     if subarray != 'SUBSTRIP96':
+        dimy = 256
         # === Second Order ===
+        # Subtract off the reconstructed first order.
+        o2_res = clear - o1_uncontam[pad:dimy+pad]
         # Construct the second order profile.
         if verbose != 0:
             print('  Starting the second order trace...')
-        o2_results = reconstruct_order(clear - o1_nopad, centroids,
-                                       wavemap=wavemap, order=2,
-                                       psfs=psfs, halfwidth=halfwidth, pad=pad,
-                                       o1_prof=o1_rect,  verbose=verbose)
-        o2_uncontam, o2_nopad, o2_rect = o2_results
+        o2_results = reconstruct_order(o2_res, centroids, order=2, psfs=psfs,
+                                       halfwidth=halfwidth, pad=pad,
+                                       wavemap=wavemap, o1_prof=o1_rect,
+                                       verbose=verbose)
+        o2_uncontam, o2_rect = o2_results
         # Add padding to the lower edge of spatial axis if necessary.
         if pad != 0:
             o2_uncontam = np.pad(o2_uncontam, ((pad, 0), (0, 0)), mode='edge')
-        #return o1_uncontam, o2_uncontam, None
 
         # === Third Order ===
         # Construct the third order profile.
+        # Subtract off the reconstructed first and second orders.
+        o3_res = clear - o1_uncontam[pad:dimy+pad] - o2_uncontam[pad:dimy+pad]
         if verbose != 0:
             print('  Starting the third order trace...')
-        o3_out = reconstruct_order(clear - o1_nopad - o2_nopad, centroids,
-                                   wavemap=wavemap, order=3, psfs=psfs,
-                                   pivot=700, halfwidth=halfwidth, pad=pad,
-                                   o2_prof=o2_rect, verbose=verbose)
+        o3_out = reconstruct_order(o3_res, centroids, order=3, psfs=psfs,
+                                   halfwidth=halfwidth, pad=pad,
+                                   wavemap=wavemap, pivot=700, o2_prof=o2_rect,
+                                   verbose=verbose)
         o3_uncontam = o3_out[0]
         # Add padding to the lower edge of the spatial axis if necessary.
         if pad != 0:
@@ -426,19 +429,16 @@ def pad_spectral_axis(frame, xcens, ycens, pad=0, ref_cols=None,
     return newframe
 
 
-# TODO: remove the nopad return
-def reconstruct_order(residual, cen, order, psfs, halfwidth, pad, wavemap,
-                      pivot=750, o1_prof=None, o2_prof=None, os_factor=10,
-                      verbose=0):
+def reconstruct_order(clear, cen, order, psfs, halfwidth, pad, wavemap,
+                      pivot=750, o1_prof=None, o2_prof=None, verbose=0):
     """Reconstruct the wings of the the spatial profiles using simulated
     WebbPSF PSFs. Will also add padding to the spatial axes of orders 2 and 3,
     where the trace touches the top edge of the detector.
 
     Parameters
     ----------
-    residual : np.array
-        NIRISS/SOSS data frame residual map - either with o1, or both o1 and
-        o2 removed.
+    clear : np.array
+        NIRISS/SOSS data frame.
     cen : dict
         Centroids dictionary.
     order : int
@@ -462,8 +462,6 @@ def reconstruct_order(residual, cen, order, psfs, halfwidth, pad, wavemap,
     o2_prof : array_like
         Uncontaminated order 2 spatial profile. Only necessary for
         reconstruction of order 3.
-    os_factor : int
-        Oversampling factor for re-centroiding.
     verbose : int
         level of verbosity.
 
@@ -471,19 +469,16 @@ def reconstruct_order(residual, cen, order, psfs, halfwidth, pad, wavemap,
     -------
     new_frame : np.array
         Model of the second order spatial profile with wings reconstructed.
-    new_frame_nopad : np.array
-        Reconstructed profile at the native counts level. Only really necessary
-        for order 1.
     frame_rect : np.array
-        Reconstructed profiles, rectified and oversampled.
+        Reconstructed profiles, rectified.
     """
 
     # Initalize new data frame and get subarray dimensions.
-    dimy, dimx = np.shape(residual)
+    dimy, dimx = np.shape(clear)
     dimy_r = np.shape(psfs['PSF'])[1]
     frame_rect = np.zeros((dimy_r, dimx))
     new_frame = np.zeros((dimy+pad, dimx))
-    new_frame_nopad = np.zeros((dimy, dimx))
+    os_factor = 10  # Do recentroiding at 10x ovserampling.
     # Get wavelength calibration.
     wavecal_x, wavecal_w = applesoss_utils.get_wave_solution(wavemap,
                                                              order=order)
@@ -510,7 +505,7 @@ def reconstruct_order(residual, cen, order, psfs, halfwidth, pad, wavemap,
             continue
 
         # Get a copy of the spatial profile, and normalize it by its max value.
-        working_prof = np.copy(residual[:, i])
+        working_prof = np.copy(clear[:, i])
         lwp = len(working_prof)
         working_prof_os = np.interp(np.linspace(0, (os_factor*lwp-1)/os_factor,
                                                 (os_factor*lwp-1)+1),
@@ -558,9 +553,6 @@ def reconstruct_order(residual, cen, order, psfs, halfwidth, pad, wavemap,
                            np.linspace(0, (dimy+pad)-1, os_factor*(dimy+pad)),
                            stitch)
         new_frame[:, i] = stitch
-        # Save a copy of the profile without padding. Padding is only added to
-        # the upper part here, the lower part is handled later.
-        new_frame_nopad[:, i] = stitch[:dimy]
 
     # For columns where the order 2 core is not distinguishable (due to the
     # throughput dropping near 0, or it being buried in order 1) reuse a
@@ -618,7 +610,7 @@ def reconstruct_order(residual, cen, order, psfs, halfwidth, pad, wavemap,
                                                                os_factor=os_factor)
             new_frame[:, i] = working_prof[:dimy+pad]
 
-    return new_frame, new_frame_nopad, frame_rect
+    return new_frame, frame_rect
 
 
 def simulate_wings(w, psfs, halfwidth, verbose=0):
