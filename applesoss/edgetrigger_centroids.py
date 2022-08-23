@@ -9,29 +9,26 @@ Functions necessary to locate the centroids of the NIRISS SOSS trace using the
 edgetrigger algorithm.
 """
 
-import warnings
-
-import numpy as np
-
 from astropy.io import fits
-
-from applesoss.edgetrigger_utils import zero_roll, robust_polyfit, get_image_dim
-
 from matplotlib import colors
 import matplotlib.pyplot as plt
+import numpy as np
+import warnings
+
+from applesoss.edgetrigger_utils import zero_roll, robust_polyfit, get_image_dim
 
 
 def _plot_centroid(image, xtrace, ytrace):
     """Overplot the extracted trace positions on the image.
 
-    :param image: A 2D image of the detector.
-    :param xtrace: The x coordinates of the trace to overplot on the image.
-    :param ytrace: The y coordinates of the trace to overplot on the image.
-
-    :type image: array[float]
-    :type xtrace: array[float]
-    :type ytrace: array[float]
-
+    Parameters
+    ----------
+    image : array[float]
+        A 2D image of the detector.
+    xtrace : array[float]
+        The x coordinates of the trace to overplot on the image.
+    ytrace : array[float]
+        The y coordinates of the trace to overplot on the image.
     """
 
     nrows, ncols = image.shape
@@ -44,7 +41,6 @@ def _plot_centroid(image, xtrace, ytrace):
         figsize = ncols/64, nrows/32
 
     plt.figure(figsize=figsize)
-
     plt.title('Trace Centroids')
 
     plt.imshow(image, origin='lower', cmap='inferno', norm=colors.LogNorm(),
@@ -54,28 +50,23 @@ def _plot_centroid(image, xtrace, ytrace):
     plt.xlabel('Spectral Pixel', fontsize=14)
     plt.ylabel('Spatial Pixel', fontsize=14)
     plt.legend(fontsize=12)
-
     plt.xlim(-0.5, ncols - 0.5)
     plt.ylim(-0.5, nrows - 0.5)
 
     plt.tight_layout()
-
     plt.show()
     plt.close()
-
-    return
 
 
 def _plot_centroids(image, centroids):
     """Visualize the trace extracted by get_soss_centroids().
 
-    :param image: A 2D image of the detector.
-    :param centroids: A dictionary containg the trace, as returned by
-        get_soss_centroids().
-
-    :type image: array[float]
-    :type centroids: dict
-
+    Parameters
+    ----------
+    image : array[float]
+        A 2D image of the detector.
+    centroids : dict
+        A dictionary containg the trace, as returned by get_soss_centroids().
     """
 
     # Determine an appropriate figure size.
@@ -90,7 +81,6 @@ def _plot_centroids(image, centroids):
 
     # Make a figure showing the trace for all 3 orders.
     plt.figure(figsize=figsize)
-
     plt.title('Trace Positions')
 
     plt.imshow(image, origin='lower', cmap='inferno', norm=colors.LogNorm(),
@@ -125,16 +115,12 @@ def _plot_centroids(image, centroids):
     plt.xlabel('Spectral Pixel', fontsize=14)
     plt.ylabel('Spatial Pixel', fontsize=14)
     plt.legend(fontsize=12)
-
     plt.xlim(-0.5, ncols - 0.5)
     plt.ylim(-0.5, nrows - 0.5)
 
     plt.tight_layout()
-
     plt.show()
     plt.close()
-
-    return
 
 
 def edge_trigger(image, halfwidth=5, yos=1, verbose=False, outdir=None):
@@ -142,21 +128,27 @@ def edge_trigger(image, halfwidth=5, yos=1, verbose=False, outdir=None):
     of the derivative  of the columns, which is computed in a running window
     along the columns of the detector image
 
-     :param image: A 2D image of the detector.
-     :param halfwidth: the size of the window used when computing the
-        derivatives.
-     :param yos: the oversampling factor of the image array along the
-        y-direction.
-     :param verbose: If set True some diagnostic plots will be made.
+    Parameters
+    ----------
+    image : array[float]
+        A 2D image of the detector.
+    halfwidth : int
+        Size of the window used when computing the derivatives.
+    yos : int
+        Oversampling factor of the image array along the y-direction.
+    verbose : bool
+        If set True some diagnostic plots will be made.
+    outdir : str
+        Directory to which to save results.
 
-     :type image: array[float]
-     :type halfwidth: int
-     :type yos: int
-     :type verbose: bool
-
-     :returns: ytrace_max, ytrace_min, ytrace_comb - The upper edge, lower
-        edge and center of the trace.
-     :rtype: Tuple(array[float], array[float], array[float])
+    Returns
+    -------
+    ytrace_max : array[float]
+        Upper edge of the trace.
+    ytrace_min : array[float]
+        Lower edge of the trace.
+    ytrace_comb : array[float]
+        Center of the trace.
      """
 
     dimy, dimx = image.shape
@@ -229,11 +221,9 @@ def edge_trigger(image, halfwidth=5, yos=1, verbose=False, outdir=None):
     widths_best = np.where(slopes_best != 0, widths_best, np.nan)
 
     if verbose:
-
         nrows, ncols = image.shape
 
         plt.figure(figsize=(ncols/128, nrows/128))
-
         plt.title('Edge-trigger Trace Positions')
 
         plt.imshow(image, origin='lower', cmap='inferno',
@@ -260,33 +250,39 @@ def get_centroids_edgetrigger(image, header=None, mask=None, poly_order=11,
                               halfwidth=5, mode='combined', verbose=False,
                               outdir=None):
     """Determine the x, y coordinates of the trace using the derivatives along
-    the y-axis.
-    Works for either order if there is no contamination.
+    the y-axis. Works for either order if there is no contamination.
 
-    :param image: A 2D image of the detector.
-    :param header: The header from one of the SOSS reference files.
-    :param mask: A boolean array of the same shape as image. Pixels
-        corresponding to True values will be masked.
-    :param poly_order: Order of the polynomial to fit to the extracted trace
-        positions.
-    :param halfwidth: the size of the window used when computing the
-        derivatives.
-    :param mode: Which trace values to use. Can be 'bottomedge', 'topedge',
-        'mean' or 'combined'.
-    :param verbose: If set True some diagnostic plots will be made.
+    Parameters
+    ----------
+    image : array[float]
+        A 2D image of the detector.
+    header : astropy.io.fits.Header instance
+        The header from one of the SOSS reference files.
+    mask : array[bool]
+        A boolean array of the same shape as image. Pixels corresponding to
+        True values will be masked.
+    poly_order : int, None
+        Order of the polynomial to fit to the extracted trace positions.
+    halfwidth : int
+        Size of the window used when computing the derivatives.
+    mode : str
+        Which trace values to use. Can be 'bottomedge', 'topedge', 'mean' or
+        'combined'.
+    verbose : bool
+        If set True some diagnostic plots will be made.
+    outdir : str
+        Directory to which to save results.
 
-    :type image: array[float]
-    :type header: astropy.io.fits.Header
-    :type mask: array[bool]
-    :type poly_order: int or None
-    :type halfwidth: int
-    :type mode: str
-    :type verbose: bool
-
-    :returns: xtrace, ytrace, tracewidth, param - The x, y coordinates of
-        trace as computed from the best fit polynomial and the best-fit
-        polynomial parameters.
-    :rtype: Tuple(array[float], array[float], array[float])
+    Returns
+    -------
+    xtrace : array[float]
+        X-coordinates of the trace.
+    ytrace : array[float]
+        Y-coordinates of the trace.
+    tracewidth : array[float]
+        Trace widths.
+    param : array[float]
+        Best fittinng polynomial parameters.
     """
 
     # If no mask was given use all pixels.
@@ -337,26 +333,27 @@ def get_centroids_edgetrigger(image, header=None, mask=None, poly_order=11,
 
 
 def build_mask_vertical(shape, xlims, mask_right=True, mask_between=True):
-    """Mask along the vertical(s) given by xlims.
-    If xlims contains 1 element masks pixels blue-wards or red-wards according
-    to the value of mask_blue (and mask_between is ignored).
-    If xlims contains 2 elements masks pixels between or outside these values
-    according to the value of mask_between (and mask_blue is ignored).
+    """Mask along the vertical(s) given by xlims. If xlims contains 1 element
+    masks pixels blue-wards or red-wards according to the value of mask_blue
+    (and mask_between is ignored). If xlims contains 2 elements masks pixels
+    between or outside these values according to the value of mask_between
+    (and mask_blue is ignored).
 
-    :param shape: tuple containing the intended shape of the mask array.
-    :param xlims: the column indices to use as the limits of the masked area.
-    :param mask_right: if True mask pixels to the right of xlims, otherwise
-                       mask to the left.
-    :param mask_between: if True mask pixels between xlims, otherwise mask
-                         outside.
+    Parameters
+    ----------
+    shape : tuple[int]
+        Tuple containing the intended shape of the mask array.
+    xlims : list[float]
+        The column indices to use as the limits of the masked area.
+    mask_right : bool
+        If True mask pixels to the right of xlims, otherwise mask to the left.
+    mask_between : bool
+        If True mask pixels between xlims, otherwise mask= outside.
 
-    :type shape: tuple[int]
-    :type xlims: list[float]
-    :type mask_right: bool
-    :type mask_between: bool
-
-    :returns: mask - A mask the removes a vertical region according to xlims.
-    :rtype: array[bool]
+    Returns
+    -------
+    mask : array[bool]
+        A mask the removes a vertical region according to xlims.
     """
 
     dimy, dimx = shape
@@ -367,23 +364,19 @@ def build_mask_vertical(shape, xlims, mask_right=True, mask_between=True):
     xgrid, _ = np.meshgrid(x, y)
 
     if np.size(xlims) == 1:
-
         # Mask blue-wards or red-wards of a single value.
         if mask_right:
             mask = xgrid >= xlims[0]
         else:
             mask = xgrid < xlims[0]
-
     elif np.size(xlims) == 2:
-
         # Mask between or exterior to two values.
         if mask_between:
             mask = (xgrid >= xlims[0]) & (xgrid < xlims[1])
         else:
             mask = (xgrid < xlims[0]) | (xgrid >= xlims[1])
-
     else:
-        msg = 'xlims must be a list or array of up to 2 indices.'
+        msg = 'xlims must be a list or array of up to two indices.'
         raise ValueError(msg)
 
     return mask
@@ -1252,13 +1245,3 @@ def get_soss_centroids(image, tracetable, mask=None, subarray='SUBSTRIP256',
         _plot_centroids(image, centroids)
 
     return centroids
-
-
-def main():
-    """Placeholder for potential multiprocessing."""
-
-    return
-
-
-if __name__ == '__main__':
-    main()
