@@ -517,9 +517,6 @@ def reconstruct_order(clear, cen, order, psfs, halfwidth, pad, wavemap,
             verbose = 0
         wing, wing2 = simulate_wings(wave, psfs, halfwidth=halfwidth,
                                      verbose=verbose)
-        # Hack to shift left wing over by one pixel to account for the fact
-        # that it isn't lining up perfectly with the profile for some reason.
-        wing2 = np.pad(wing2, (1, 0), mode='edge')
         wing *= max_val
         lw = len(wing)
         wing_os = np.interp(np.linspace(0, (os_factor*lw-1)/os_factor,
@@ -527,7 +524,7 @@ def reconstruct_order(clear, cen, order, psfs, halfwidth, pad, wavemap,
                             wing)
         wing2 *= max_val
         lw2 = len(wing2)
-        wing2_os = np.interp(np.linspace(0, (os_factor*lw2-1)/os_factor,
+        wing2_os = np.interp(np.linspace(0, (os_factor*lw2-1)/os_factor-1,
                                          (os_factor*lw2-1)+1), np.arange(lw2),
                              wing2)
         first_time = False
@@ -539,18 +536,20 @@ def reconstruct_order(clear, cen, order, psfs, halfwidth, pad, wavemap,
                                  working_prof_os[(start+os_factor):end],
                                  wing_os])
         # Interpolate the rectified PSF back to native pixel sampling.
-        psf_len = dimy_r * os_factor
         stitch_nat = np.interp(np.arange(dimy_r),
-                               np.linspace(0, dimy_r - 1, psf_len),
+                               np.linspace(0, (os_factor*dimy_r-1)/os_factor,
+                                           (os_factor*dimy_r-1)+1),
                                stitch)
         frame_rect[:, i] = stitch_nat
         # Shift the oversampled PSF to its correct centroid position
+        psf_len = dimy_r * os_factor
         stitch = np.interp(np.arange((dimy+pad)*os_factor),
                            np.arange(psf_len) - psf_len//2 + cen_o,
                            stitch)
         # Interpolate shifted PSF to native pixel sampling.
         stitch = np.interp(np.arange(dimy+pad),
-                           np.linspace(0, (dimy+pad)-1, os_factor*(dimy+pad)),
+                           np.linspace(0, (os_factor*(dimy+pad)-1)/os_factor,
+                                       (os_factor*(dimy+pad)-1)+1),
                            stitch)
         new_frame[:, i] = stitch
 
@@ -646,7 +645,7 @@ def simulate_wings(w, psfs, halfwidth, verbose=0):
 
     # Define the edges of the profile 'core'.
     ax = np.arange(psf_size)
-    ystart = int(round(psf_size//2 - halfwidth, 0))
+    ystart = int(round(psf_size//2 - halfwidth, 0)) + 1
     yend = int(round(psf_size//2 + halfwidth, 0))
     # Get and fit the 'right' wing.
     wing = stand[yend:]
