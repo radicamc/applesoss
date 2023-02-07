@@ -79,7 +79,7 @@ class EmpiricalProfile:
         self.order3 = None
 
     def build_empirical_profile(self, wave_increment=0.1, halfwidth=12,
-                                verbose=0):
+                                obs_date=None, verbose=0):
         """Run the empirical spatial profile construction module.
 
         Parameters
@@ -89,6 +89,8 @@ class EmpiricalProfile:
             advisable not to use steps larger than 0.1µm.
         halfwidth : int
             half-width of the trace in native pixels.
+        obs_date : str
+            Date of observations in 'yyyy-mm-dd' format.
         verbose: int
             Level of verbosity: either 3, 2, 1, or 0.
             3 - show all of progress prints, progress bars, and diagnostic
@@ -103,7 +105,7 @@ class EmpiricalProfile:
                                              self.pad, self.oversample,
                                              self.wavemap, self.tracetable,
                                              wave_increment, halfwidth,
-                                             verbose)
+                                             obs_date, verbose)
         # Set any niggling negatives to zero (mostly for the bluest end of the
         # second order where things get skrewy).
         for o in [o1, o2, o3]:
@@ -156,7 +158,8 @@ class EmpiricalProfile:
 
 
 def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
-                            tracetable, wave_increment, halfwidth, verbose):
+                            tracetable, wave_increment, halfwidth,
+                            obs_date, verbose):
     """Main procedural function for the empirical spatial profile construction
     module. Calling this function will initialize and run all the required
     subroutines to produce a spatial profile for the first, second, and third
@@ -184,6 +187,8 @@ def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
         Wavelength step (in µm) for PSF simulations.
     halfwidth : int
         Half-width of the trace in native pixels.
+    obs_date : str
+        Date of observations in 'yyyy-mm-dd' format.
     verbose : int
         Level of verbosity: either 3, 2, 1, or 0.
          3 - show all of progress prints, progress bars, and diagnostic plots.
@@ -248,7 +253,7 @@ def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
     # WebbPSF.
     # Generate WebbPSF 1D profiles across a range of wavelengths.
     psfs = applesoss_utils.generate_psfs(wave_increment=wave_increment,
-                                         verbose=verbose)
+                                         verbose=verbose, obs_date=obs_date)
 
     # === First Order ===
     # Construct the first order profile.

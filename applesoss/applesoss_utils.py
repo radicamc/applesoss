@@ -15,7 +15,7 @@ import warnings
 import webbpsf
 
 
-def generate_psfs(wave_increment=0.1, npix=400, verbose=0):
+def generate_psfs(wave_increment=0.1, npix=400, obs_date=None, verbose=0):
     """Generate 1D SOSS PSFs across the full 0.5 - 2.9µm range of all orders.
 
     Parameters
@@ -24,6 +24,8 @@ def generate_psfs(wave_increment=0.1, npix=400, verbose=0):
         Wavelength step (in µm) for PSF simulation.
     npix : int
         Size (in native pixels) of the 1D PSFs.
+    obs_date : str
+        Date of observations in 'yyyy-mm-dd' format.
     verbose : int
         Level of verbosity.
     Returns
@@ -48,6 +50,11 @@ def generate_psfs(wave_increment=0.1, npix=400, verbose=0):
     # Set correct filter and pupil wheel components.
     niriss.filter = 'CLEAR'
     niriss.pupil_mask = 'GR700XD'
+
+    # Get real OTE WFE from date of observations.
+    if obs_date is not None:
+        obs_date += 'T00:00:00'
+        niriss.load_wss_opd_by_date(obs_date)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
