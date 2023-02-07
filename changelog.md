@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+### [1.0.0] -- 2023-01-07
+#### Added
+- Update version number. First release.
+
 ### [0.1.1] -- 2022-08-26
 #### Added
 - Fix a bug causing slight vertical offsets in the profiles of all three orders.

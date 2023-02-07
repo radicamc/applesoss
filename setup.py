@@ -4,7 +4,7 @@
 from setuptools import setup
 
 setup(name='applesoss',
-      version='0.1.1',
+      version='1.0.0',
       license='MIT',
       author='Michael Radica',
       author_email='michael.radica@umontreal.ca',
