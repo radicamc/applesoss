@@ -72,6 +72,62 @@ def generate_psfs(wave_increment=0.1, npix=400, obs_date=None, verbose=0):
     return psfs
 
 
+def generate_superprof(deep, cens, badpix=None, col_start=1850, col_end=2030):
+    """Obtain an uncontaminated trace profile using the red end of order 1.
+
+    Parameters
+    ----------
+    deep : array-like
+        SOSS deep stack.
+    cens : dict
+        Centroids dictionary.
+    badpix : array-like
+        Bad pixel mask that is the same shape as deep. Zero-valued pixels will
+        be used, and all other-valued pixels will be masked.
+    col_start : int
+        First column to consider.
+    col_end : int
+        Last column to consider.
+
+    Returns
+    -------
+    superprof : array-like
+        Uncontaminated order 1 trace profile.
+    """
+
+    dimy, dimx = np.shape(deep)
+    new = np.zeros((dimy, col_end - col_start))
+
+    # Mask any flagged pixels
+    ii = np.where(badpix != 0)
+    deep[ii] = np.nan
+
+    # Loop over all columns to consider. Rectify the trace by interpolating
+    # the profiles to a common centroid.
+    for i in range(col_start, col_end):
+        old_prof = deep[:, i]
+        # Do the interpolation at 10x oversampling to minimize errors.
+        old_os = np.interp(np.linspace(0, dimy-1, dimy*10),
+                           np.arange(dimy), old_prof)
+        cen = cens['order 1']['Y centroid'][i]
+        new_prof = np.interp(np.arange(dimy),
+                             np.linspace(0, dimy-1, dimy*10) - cen +
+                             cens['order 1']['Y centroid'][col_end-1], old_os)
+        # normalize by the profile sum to remove amplitude variations.
+        new[:, i-col_start] = new_prof / np.nansum(new_prof)
+
+    # Collapse the recitifed trace along the wavelength axis to create a
+    # single profile.
+    flat = np.nanmedian(new, axis=1)
+    # Wing on the upper part of the profile is more extended than the lower
+    # since the profile is located towards the bottom of the detector. Mirror
+    # the upper half to the lower half.
+    ind = int(cens['order 1']['Y centroid'][col_end])
+    superprof = np.concatenate([flat[::-1][:-ind], flat[ind:]])
+
+    return superprof
+
+
 def get_wave_solution(wavemap_file, order):
     """Extract wavelength calibration information from the wavelength solution
     reference file.
