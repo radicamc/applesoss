@@ -558,20 +558,25 @@ def reconstruct_order(clear, cen, order, empirical, psfs, halfwidth, pad,
             wing, wing2, stand = get_wings(wave, psfs, clear, cen,
                                            halfwidth=halfwidth,
                                            empirical=False, verbose=verbose)
+            shift = 0
         else:
             wing, wing2 = np.copy(ewing), np.copy(ewing2)
+            # Hack to account for the fact that the trace thins slightly
+            # (~1 pixel) towards bluer wavelengths.
+            shift = (-0.5/2040)*i + 1.5
         wing *= max_val
         lw = len(wing)
         wing_os = np.interp(np.linspace(0, (os_factor*lw-1)/os_factor,
-                                        os_factor*lw), np.arange(lw), wing)
+                                        os_factor*lw)+shift, np.arange(lw),
+                            wing)
         wing2 *= max_val
         lw2 = len(wing2)
         wing2_os = np.interp(np.linspace(0, (os_factor*lw2-1)/os_factor-1,
                                          os_factor*lw2), np.arange(lw2), wing2)
         first_time = False
         # Concatenate the wings onto the profile core.
-        end = int(round((cen_o + halfwidth*os_factor), 0))
         start = int(round((cen_o - halfwidth*os_factor), 0))
+        end = int(round((cen_o + halfwidth*os_factor), 0))
 
         stitch = np.concatenate([wing2_os,
                                  working_prof_os[(start+os_factor):end],
