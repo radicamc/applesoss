@@ -112,7 +112,7 @@ def generate_superprof(deep, cens, badpix=None, col_start=1850, col_end=2030):
         cen = cens['order 1']['Y centroid'][i]
         new_prof = np.interp(np.arange(dimy),
                              np.linspace(0, dimy-1, dimy*10) - cen +
-                             cens['order 1']['Y centroid'][col_end-1], old_os)
+                             cens['order 1']['Y centroid'][col_end], old_os)
         # normalize by the profile sum to remove amplitude variations.
         new[:, i-col_start] = new_prof / np.nansum(new_prof)
 
