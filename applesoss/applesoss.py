@@ -79,7 +79,7 @@ class EmpiricalProfile:
         self.order3 = None
 
     def build_empirical_profile(self, empirical=True, wave_increment=0.1,
-                                halfwidth=14, obs_date=None, verbose=0):
+                                halfwidth=16, obs_date=None, verbose=0):
         """Run the empirical spatial profile construction module.
 
         Parameters
@@ -285,7 +285,6 @@ def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
         # === Second Order ===
         # Subtract off the reconstructed first order.
         o2_res = clear - o1_uncontam[pad:dimy+pad]
-        #return o1_uncontam, o2_res, o2_res
         # Construct the second order profile.
         if verbose != 0:
             print('  Starting the second order trace...')
@@ -478,9 +477,7 @@ def reconstruct_order(clear, cen, order, empirical, psfs, halfwidth, pad,
         Path to SOSS 2D wavelength solution reference file.
     pivot : int
         For order 2, minimum spectral pixel value for which a wing
-        reconstruction will be attempted. For order 3, the maximum pixel value.
-        For spectral pixels < or >pivot respectively, the profile at pivot will
-        be used.
+        reconstruction will be attempted.
     o1_prof : array-like
         Uncontaminated order 1 spatial profile. Only necessary for
         reconstruction of order 2.
@@ -508,6 +505,7 @@ def reconstruct_order(clear, cen, order, empirical, psfs, halfwidth, pad,
     # Get wavelength calibration.
     wavecal_x, wavecal_w = applesoss_utils.get_wave_solution(wavemap,
                                                              order=order)
+
     # In the fully empirical case, wings only need to be generated once.
     # Do this now.
     if empirical is True:
@@ -524,7 +522,7 @@ def reconstruct_order(clear, cen, order, empirical, psfs, halfwidth, pad,
 
     first_time = True
     if order == 3:
-        maxi = pivot
+        maxi = 0
     else:
         maxi = dimx
     for i in range(dimx):
@@ -533,7 +531,7 @@ def reconstruct_order(clear, cen, order, empirical, psfs, halfwidth, pad,
         # and/or the order is buried within another.
         if order == 2 and i < pivot:
             continue
-        if order == 3 and i > pivot:
+        if order == 3:
             continue
         # If the centroid is too close to the detector edge, make note of
         # the column and deal with it later
@@ -543,7 +541,8 @@ def reconstruct_order(clear, cen, order, empirical, psfs, halfwidth, pad,
                 maxi = i
             continue
 
-        # Get a copy of the spatial profile, and normalize it by its max value.
+        # Get a copy of the spatial profile, oversample and normalize it by
+        # its max value.
         working_prof = np.copy(clear[:, i])
         lwp = len(working_prof)
         working_prof_os = np.interp(np.linspace(0, (os_factor*lwp-1)/os_factor,
@@ -573,28 +572,30 @@ def reconstruct_order(clear, cen, order, empirical, psfs, halfwidth, pad,
                              wing2)
         first_time = False
         # Concatenate the wings onto the profile core.
-        end = int(round((cen_o + halfwidth*os_factor), 0))
         start = int(round((cen_o - halfwidth*os_factor), 0))
+        if empirical is True:
+            # Hack to get things to line up well.
+            end = int(round((cen_o + (halfwidth-2)*os_factor), 0))
+            nat_ax = np.arange(dimy_r)-1
+        else:
+            end = int(round((cen_o + halfwidth*os_factor), 0))
+            nat_ax = np.arange(dimy_r)
 
         stitch = np.concatenate([wing2_os,
                                  working_prof_os[(start+os_factor):end],
                                  wing_os])
         # Interpolate the rectified PSF back to native pixel sampling.
-        stitch_nat = np.interp(np.arange(dimy_r),
-                               np.linspace(0, (os_factor*dimy_r-1)/os_factor,
-                                           (os_factor*dimy_r-1)+1),
+        stitch_nat = np.interp(nat_ax, np.arange(len(stitch))/os_factor,
                                stitch)
         frame_rect[:, i] = stitch_nat
         # Shift the oversampled PSF to its correct centroid position
-        psf_len = dimy_r * os_factor
+        psf_len = len(stitch)
         stitch = np.interp(np.arange((dimy+pad)*os_factor),
-                           np.arange(psf_len) - psf_len//2 + cen_o,
-                           stitch)
+                           np.arange(psf_len) - psf_len//2 + cen_o, stitch)
         # Interpolate shifted PSF to native pixel sampling.
         stitch = np.interp(np.arange(dimy+pad),
                            np.linspace(0, (os_factor*(dimy+pad)-1)/os_factor,
-                                       (os_factor*(dimy+pad)-1)+1),
-                           stitch)
+                                       (os_factor*(dimy+pad)-1)+1), stitch)
         new_frame[:, i] = stitch
 
     # For columns where the order 2 core is not distinguishable (due to the
