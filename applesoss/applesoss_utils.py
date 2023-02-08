@@ -15,7 +15,7 @@ import warnings
 import webbpsf
 
 
-def generate_psfs(wave_increment=0.1, npix=400, verbose=0):
+def generate_psfs(wave_increment=0.1, npix=400, obs_date=None, verbose=0):
     """Generate 1D SOSS PSFs across the full 0.5 - 2.9µm range of all orders.
 
     Parameters
@@ -24,6 +24,8 @@ def generate_psfs(wave_increment=0.1, npix=400, verbose=0):
         Wavelength step (in µm) for PSF simulation.
     npix : int
         Size (in native pixels) of the 1D PSFs.
+    obs_date : str
+        Date of observations in 'yyyy-mm-dd' format.
     verbose : int
         Level of verbosity.
     Returns
@@ -49,6 +51,11 @@ def generate_psfs(wave_increment=0.1, npix=400, verbose=0):
     niriss.filter = 'CLEAR'
     niriss.pupil_mask = 'GR700XD'
 
+    # Get real OTE WFE from date of observations.
+    if obs_date is not None:
+        obs_date += 'T00:00:00'
+        niriss.load_wss_opd_by_date(obs_date)
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         cube = niriss.calc_datacube(wavelengths=wavelengths, fov_pixels=npix,
@@ -63,6 +70,62 @@ def generate_psfs(wave_increment=0.1, npix=400, verbose=0):
     psfs['PSF'] = psfs_1d
 
     return psfs
+
+
+def generate_superprof(deep, cens, badpix=None, col_start=1850, col_end=2030):
+    """Obtain an uncontaminated trace profile using the red end of order 1.
+
+    Parameters
+    ----------
+    deep : array-like
+        SOSS deep stack.
+    cens : dict
+        Centroids dictionary.
+    badpix : array-like
+        Bad pixel mask that is the same shape as deep. Zero-valued pixels will
+        be used, and all other-valued pixels will be masked.
+    col_start : int
+        First column to consider.
+    col_end : int
+        Last column to consider.
+
+    Returns
+    -------
+    superprof : array-like
+        Uncontaminated order 1 trace profile.
+    """
+
+    dimy, dimx = np.shape(deep)
+    new = np.zeros((dimy, col_end - col_start))
+
+    # Mask any flagged pixels
+    ii = np.where(badpix != 0)
+    deep[ii] = np.nan
+
+    # Loop over all columns to consider. Rectify the trace by interpolating
+    # the profiles to a common centroid.
+    for i in range(col_start, col_end):
+        old_prof = deep[:, i]
+        # Do the interpolation at 10x oversampling to minimize errors.
+        old_os = np.interp(np.linspace(0, dimy-1, dimy*10),
+                           np.arange(dimy), old_prof)
+        cen = cens['order 1']['Y centroid'][i]
+        new_prof = np.interp(np.arange(dimy),
+                             np.linspace(0, dimy-1, dimy*10) - cen +
+                             cens['order 1']['Y centroid'][col_end], old_os)
+        # normalize by the profile sum to remove amplitude variations.
+        new[:, i-col_start] = new_prof / np.nansum(new_prof)
+
+    # Collapse the recitifed trace along the wavelength axis to create a
+    # single profile.
+    flat = np.nanmedian(new, axis=1)
+    # Wing on the upper part of the profile is more extended than the lower
+    # since the profile is located towards the bottom of the detector. Mirror
+    # the upper half to the lower half.
+    ind = int(cens['order 1']['Y centroid'][col_end])
+    superprof = np.concatenate([flat[::-1][:-ind], flat[ind:]])
+
+    return superprof
 
 
 def get_wave_solution(wavemap_file, order):

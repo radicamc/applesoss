@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+### [2.0.0] -- 2023-02-08
+#### Added
+- Option to construct profiles completely empirically, reusing wings from the uncontaminated region of order 1. 
+- 
+### [1.1.0] -- 2023-02-07
+#### Added
+- When simulating PSFs using WebbPSF, add option to specify the observation date and use the measured telescope OTE from that date.
+
 ### [1.0.0] -- 2023-01-07
 #### Added
 - Update version number. First release.

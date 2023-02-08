@@ -78,17 +78,22 @@ class EmpiricalProfile:
         self.order2 = None
         self.order3 = None
 
-    def build_empirical_profile(self, wave_increment=0.1, halfwidth=12,
-                                verbose=0):
+    def build_empirical_profile(self, empirical=True, wave_increment=0.1,
+                                halfwidth=16, obs_date=None, verbose=0):
         """Run the empirical spatial profile construction module.
 
         Parameters
         ----------
+        empirical : bool
+            If True, pull the trace wings from uncontaminated trace profiles.
+            If False, use WebbPSF.
         wave_increment : float
             Wavelength step (in µm) for PSF simulations. For accuracy, it is
             advisable not to use steps larger than 0.1µm.
         halfwidth : int
             half-width of the trace in native pixels.
+        obs_date : str
+            Date of observations in 'yyyy-mm-dd' format.
         verbose: int
             Level of verbosity: either 3, 2, 1, or 0.
             3 - show all of progress prints, progress bars, and diagnostic
@@ -102,8 +107,8 @@ class EmpiricalProfile:
         o1, o2, o3 = build_empirical_profile(self.clear, self.subarray,
                                              self.pad, self.oversample,
                                              self.wavemap, self.tracetable,
-                                             wave_increment, halfwidth,
-                                             verbose)
+                                             empirical, wave_increment,
+                                             halfwidth, obs_date, verbose)
         # Set any niggling negatives to zero (mostly for the bluest end of the
         # second order where things get skrewy).
         for o in [o1, o2, o3]:
@@ -156,7 +161,8 @@ class EmpiricalProfile:
 
 
 def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
-                            tracetable, wave_increment, halfwidth, verbose):
+                            tracetable, empirical, wave_increment, halfwidth,
+                            obs_date, verbose):
     """Main procedural function for the empirical spatial profile construction
     module. Calling this function will initialize and run all the required
     subroutines to produce a spatial profile for the first, second, and third
@@ -180,10 +186,15 @@ def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
         Path to SOSS 2D wavelength solution reference file.
     tracetable : str
         Path to SOSS trace table reference file.
+    empirical : bool
+        If True, pull the trace wings from uncontaminated trace profiles. If
+        False, use WebbPSF.
     wave_increment : float
         Wavelength step (in µm) for PSF simulations.
     halfwidth : int
         Half-width of the trace in native pixels.
+    obs_date : str
+        Date of observations in 'yyyy-mm-dd' format.
     verbose : int
         Level of verbosity: either 3, 2, 1, or 0.
          3 - show all of progress prints, progress bars, and diagnostic plots.
@@ -245,17 +256,22 @@ def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
     # Build a first estimate of the first, second, and third order spatial
     # profiles. The cores can be mostly read off of the clear dataframe - it
     # is just the wings that need reconstruction. For this, we will use
-    # WebbPSF.
-    # Generate WebbPSF 1D profiles across a range of wavelengths.
-    psfs = applesoss_utils.generate_psfs(wave_increment=wave_increment,
-                                         verbose=verbose)
+    # either WebbPSF, or uncontaminated trace profiles from the data itself.
+    if empirical is False:
+        # Generate WebbPSF 1D profiles across a range of wavelengths.
+        psfs = applesoss_utils.generate_psfs(wave_increment=wave_increment,
+                                             verbose=verbose,
+                                             obs_date=obs_date)
+    else:
+        psfs = None
 
     # === First Order ===
     # Construct the first order profile.
     if verbose != 0:
         print(' Building the spatial profile models.')
         print('  Starting the first order model...', flush=True)
-    o1_results = reconstruct_order(clear, centroids, order=1, psfs=psfs,
+    o1_results = reconstruct_order(clear, centroids, order=1,
+                                   empirical=empirical, psfs=psfs,
                                    halfwidth=halfwidth, pad=0, wavemap=wavemap)
     o1_uncontam, o1_rect = o1_results
     # Add padding to first order spatial axis if necessary.
@@ -272,10 +288,11 @@ def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
         # Construct the second order profile.
         if verbose != 0:
             print('  Starting the second order trace...')
-        o2_results = reconstruct_order(o2_res, centroids, order=2, psfs=psfs,
+        o2_results = reconstruct_order(o2_res, centroids, order=2,
+                                       empirical=empirical, psfs=psfs,
                                        halfwidth=halfwidth, pad=pad,
                                        wavemap=wavemap, o1_prof=o1_rect,
-                                       verbose=verbose)
+                                       clear2=clear, verbose=verbose)
         o2_uncontam, o2_rect = o2_results
         # Add padding to the lower edge of spatial axis if necessary.
         if pad != 0:
@@ -287,9 +304,11 @@ def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
         o3_res = clear - o1_uncontam[pad:dimy+pad] - o2_uncontam[pad:dimy+pad]
         if verbose != 0:
             print('  Starting the third order trace...')
-        o3_out = reconstruct_order(o3_res, centroids, order=3, psfs=psfs,
+        o3_out = reconstruct_order(o3_res, centroids, order=3,
+                                   empirical=empirical, psfs=psfs,
                                    halfwidth=halfwidth, pad=pad,
                                    wavemap=wavemap, pivot=700, o2_prof=o2_rect,
+                                   o1_prof=o1_rect, clear2=clear,
                                    verbose=verbose)
         o3_uncontam = o3_out[0]
         # Add padding to the lower edge of the spatial axis if necessary.
@@ -429,11 +448,13 @@ def pad_spectral_axis(frame, xcens, ycens, pad=0, ref_cols=None,
     return newframe
 
 
-def reconstruct_order(clear, cen, order, psfs, halfwidth, pad, wavemap,
-                      pivot=750, o1_prof=None, o2_prof=None, verbose=0):
-    """Reconstruct the wings of the the spatial profiles using simulated
-    WebbPSF PSFs. Will also add padding to the spatial axes of orders 2 and 3,
-    where the trace touches the top edge of the detector.
+def reconstruct_order(clear, cen, order, empirical, psfs, halfwidth, pad,
+                      wavemap, pivot=750, o1_prof=None, o2_prof=None,
+                      clear2=None, verbose=0):
+    """Reconstruct the wings of the the spatial profiles using either simulated
+    WebbPSF PSFs, or fully empirical profiles taken from uncontaminated
+    regions of the data. Will also add padding to the spatial axes of orders 2
+    and 3, where the trace touches the top edge of the detector.
 
     Parameters
     ----------
@@ -443,6 +464,9 @@ def reconstruct_order(clear, cen, order, psfs, halfwidth, pad, wavemap,
         Centroids dictionary.
     order : int
         The order to reconstruct.
+    empirical : bool
+        If True, pull the trace wings from uncontaminated trace profiles. If
+        False, use WebbPSF.
     psfs : array-like
         Array of simulated 1D SOSS PSFs.
     halfwidth : int
@@ -462,6 +486,9 @@ def reconstruct_order(clear, cen, order, psfs, halfwidth, pad, wavemap,
     o2_prof : array_like
         Uncontaminated order 2 spatial profile. Only necessary for
         reconstruction of order 3.
+    clear2 : array-like
+        For orders 2 and 3 where clear is a residual frame, clear2 is the
+        original data frame. Only necessary for orders 2 and 3.
     verbose : int
         level of verbosity.
 
@@ -475,17 +502,28 @@ def reconstruct_order(clear, cen, order, psfs, halfwidth, pad, wavemap,
 
     # Initalize new data frame and get subarray dimensions.
     dimy, dimx = np.shape(clear)
-    dimy_r = np.shape(psfs['PSF'])[1]
-    frame_rect = np.zeros((dimy_r, dimx))
     new_frame = np.zeros((dimy+pad, dimx))
     os_factor = 10  # Do recentroiding at 10x ovserampling.
     # Get wavelength calibration.
     wavecal_x, wavecal_w = applesoss_utils.get_wave_solution(wavemap,
                                                              order=order)
+    # In the fully empirical case, wings only need to be generated once.
+    # Do this now.
+    if empirical is True:
+        if order == 1:
+            clear2 = clear
+        ewing, ewing2, stand = get_wings(1.0, psfs, clear2, cen,
+                                         halfwidth=halfwidth, empirical=True,
+                                         verbose=verbose)
+        dimy_r = len(stand)
+    else:
+        dimy_r = np.shape(psfs['PSF'])[1]
+    # Set dimensions for rectified trace array.
+    frame_rect = np.zeros((dimy_r, dimx))
 
     first_time = True
     if order == 3:
-        maxi = pivot
+        maxi = 0
     else:
         maxi = dimx
     for i in range(dimx):
@@ -494,7 +532,7 @@ def reconstruct_order(clear, cen, order, psfs, halfwidth, pad, wavemap,
         # and/or the order is buried within another.
         if order == 2 and i < pivot:
             continue
-        if order == 3 and i > pivot:
+        if order == 3:
             continue
         # If the centroid is too close to the detector edge, make note of
         # the column and deal with it later
@@ -508,49 +546,54 @@ def reconstruct_order(clear, cen, order, psfs, halfwidth, pad, wavemap,
         working_prof = np.copy(clear[:, i])
         lwp = len(working_prof)
         working_prof_os = np.interp(np.linspace(0, (os_factor*lwp-1)/os_factor,
-                                                (os_factor*lwp-1)+1),
+                                                os_factor*lwp),
                                     np.arange(lwp), working_prof)
         max_val = np.nanpercentile(working_prof[(cen_o//os_factor-halfwidth):(cen_o//os_factor+halfwidth)], 99)
 
-        # Simulate the wings.
+        # Get the trace wings, if simulated. These must be generated for each
+        # individual wavelength.
         if first_time is False:
             verbose = 0
-        wing, wing2 = simulate_wings(wave, psfs, halfwidth=halfwidth,
-                                     verbose=verbose)
+        if empirical is False:
+            wing, wing2, stand = get_wings(wave, psfs, clear, cen,
+                                           halfwidth=halfwidth,
+                                           empirical=False, verbose=verbose)
+            shift = 0
+        else:
+            wing, wing2 = np.copy(ewing), np.copy(ewing2)
+            # Hack to account for the fact that the trace thins slightly
+            # (~1 pixel) towards bluer wavelengths.
+            shift = (-0.5/2040)*i + 1.5
         wing *= max_val
         lw = len(wing)
         wing_os = np.interp(np.linspace(0, (os_factor*lw-1)/os_factor,
-                                        (os_factor*lw-1)+1), np.arange(lw),
+                                        os_factor*lw)+shift, np.arange(lw),
                             wing)
         wing2 *= max_val
         lw2 = len(wing2)
         wing2_os = np.interp(np.linspace(0, (os_factor*lw2-1)/os_factor-1,
-                                         (os_factor*lw2-1)+1), np.arange(lw2),
-                             wing2)
+                                         os_factor*lw2), np.arange(lw2), wing2)
         first_time = False
         # Concatenate the wings onto the profile core.
-        end = int(round((cen_o + halfwidth*os_factor), 0))
         start = int(round((cen_o - halfwidth*os_factor), 0))
+        end = int(round((cen_o + halfwidth*os_factor), 0))
 
         stitch = np.concatenate([wing2_os,
                                  working_prof_os[(start+os_factor):end],
                                  wing_os])
         # Interpolate the rectified PSF back to native pixel sampling.
+        ls = len(stitch)
         stitch_nat = np.interp(np.arange(dimy_r),
-                               np.linspace(0, (os_factor*dimy_r-1)/os_factor,
-                                           (os_factor*dimy_r-1)+1),
-                               stitch)
+                               np.linspace(0, (ls-1)/os_factor, ls), stitch)
         frame_rect[:, i] = stitch_nat
         # Shift the oversampled PSF to its correct centroid position
         psf_len = dimy_r * os_factor
         stitch = np.interp(np.arange((dimy+pad)*os_factor),
-                           np.arange(psf_len) - psf_len//2 + cen_o,
-                           stitch)
+                           np.arange(psf_len) - psf_len//2 + cen_o, stitch)
         # Interpolate shifted PSF to native pixel sampling.
         stitch = np.interp(np.arange(dimy+pad),
                            np.linspace(0, (os_factor*(dimy+pad)-1)/os_factor,
-                                       (os_factor*(dimy+pad)-1)+1),
-                           stitch)
+                                       os_factor*(dimy+pad)), stitch)
         new_frame[:, i] = stitch
 
     # For columns where the order 2 core is not distinguishable (due to the
@@ -612,17 +655,28 @@ def reconstruct_order(clear, cen, order, psfs, halfwidth, pad, wavemap,
     return new_frame, frame_rect
 
 
-def simulate_wings(w, psfs, halfwidth, verbose=0):
+def get_wings(w, psfs, deep, cens, halfwidth, badpix=None, empirical=True,
+              verbose=0):
     """Extract the wings from a simulated WebbPSF 1D profile.
 
     Parameters
     ----------
     w : float
-        Wavelength of interest (µm).
+        Wavelength of interest (µm). Necesssary if empirical is False.
     psfs : array-like
-        Array of simulated SOSS PSFs.
+        Array of simulated SOSS PSFs. Necesssary if empirical is False.
+    deep : array-like
+        SOSS deep stack. Necesssary if empirical is True.
+    cens : dict
+        Centroids dictionary. Necesssary if empirical is True.
     halfwidth : int
         Half-width of the SOSS trace.
+    badpix : array-like
+        Bad pixel mask that is the same shape as deep. Zero-valued pixels will
+        be used, and all other-valued pixels will be masked.
+    empirical : bool
+         If True, pull the trace wings from uncontaminated trace profiles. If
+         False, use WebbPSF.
     verbose : int
         Level of verbosity.
 
@@ -632,13 +686,20 @@ def simulate_wings(w, psfs, halfwidth, verbose=0):
         Extracted right wing.
     wing2 : np.array
         Extracted left wing.
+    stand : np.array
+        Profile from which wings were extracted.
     """
 
+    # Get an uncontaminated trace profile from the red end of order 1.
+    if empirical is True:
+        stand = applesoss_utils.generate_superprof(deep, cens, badpix)
+
     # Get the simulated profile at the desired wavelength.
-    stand = applesoss_utils.interpolate_profile(w, 0, psfs['Wave'][:, 0],
-                                                psfs['PSF'],
-                                                np.zeros_like(psfs['Wave'][:, 0]))
-    psf_size = np.shape(psfs['PSF'])[1]
+    else:
+        stand = applesoss_utils.interpolate_profile(w, 0, psfs['Wave'][:, 0],
+                                                    psfs['PSF'],
+                                                    np.zeros_like(psfs['Wave'][:, 0]))
+    psf_size = len(stand)
     # Normalize to a max value of one to match the simulated profile.
     max_val = np.nanpercentile(stand, 99)
     stand /= max_val
@@ -661,4 +722,4 @@ def simulate_wings(w, psfs, halfwidth, verbose=0):
         plotting.plot_wing_simulation(stand, halfwidth, wing, wing2, ax,
                                       ystart, yend)
 
-    return wing, wing2
+    return wing, wing2, stand
