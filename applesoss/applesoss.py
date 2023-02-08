@@ -523,7 +523,7 @@ def reconstruct_order(clear, cen, order, empirical, psfs, halfwidth, pad,
 
     first_time = True
     if order == 3:
-        maxi = pivot
+        maxi = 0
     else:
         maxi = dimx
     for i in range(dimx):
@@ -532,7 +532,7 @@ def reconstruct_order(clear, cen, order, empirical, psfs, halfwidth, pad,
         # and/or the order is buried within another.
         if order == 2 and i < pivot:
             continue
-        if order == 3 and i > pivot:
+        if order == 3:
             continue
         # If the centroid is too close to the detector edge, make note of
         # the column and deal with it later
