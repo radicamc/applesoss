@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-### [1.2.0] -- 2023-02-07
+### [2.0.0] -- 2023-02-08
 #### Added
 - Option to construct profiles completely empirically, reusing wings from the uncontaminated region of order 1. 
 - 
