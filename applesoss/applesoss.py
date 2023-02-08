@@ -546,7 +546,7 @@ def reconstruct_order(clear, cen, order, empirical, psfs, halfwidth, pad,
         working_prof = np.copy(clear[:, i])
         lwp = len(working_prof)
         working_prof_os = np.interp(np.linspace(0, (os_factor*lwp-1)/os_factor,
-                                                (os_factor*lwp-1)+1),
+                                                os_factor*lwp),
                                     np.arange(lwp), working_prof)
         max_val = np.nanpercentile(working_prof[(cen_o//os_factor-halfwidth):(cen_o//os_factor+halfwidth)], 99)
 
@@ -563,13 +563,11 @@ def reconstruct_order(clear, cen, order, empirical, psfs, halfwidth, pad,
         wing *= max_val
         lw = len(wing)
         wing_os = np.interp(np.linspace(0, (os_factor*lw-1)/os_factor,
-                                        (os_factor*lw-1)+1), np.arange(lw),
-                            wing)
+                                        os_factor*lw), np.arange(lw), wing)
         wing2 *= max_val
         lw2 = len(wing2)
         wing2_os = np.interp(np.linspace(0, (os_factor*lw2-1)/os_factor-1,
-                                         (os_factor*lw2-1)+1), np.arange(lw2),
-                             wing2)
+                                         os_factor*lw2), np.arange(lw2), wing2)
         first_time = False
         # Concatenate the wings onto the profile core.
         end = int(round((cen_o + halfwidth*os_factor), 0))
@@ -579,21 +577,18 @@ def reconstruct_order(clear, cen, order, empirical, psfs, halfwidth, pad,
                                  working_prof_os[(start+os_factor):end],
                                  wing_os])
         # Interpolate the rectified PSF back to native pixel sampling.
+        ls = len(stitch)
         stitch_nat = np.interp(np.arange(dimy_r),
-                               np.linspace(0, (os_factor*dimy_r-1)/os_factor,
-                                           (os_factor*dimy_r-1)+1),
-                               stitch)
+                               np.linspace(0, (ls-1)/os_factor, ls), stitch)
         frame_rect[:, i] = stitch_nat
         # Shift the oversampled PSF to its correct centroid position
         psf_len = dimy_r * os_factor
         stitch = np.interp(np.arange((dimy+pad)*os_factor),
-                           np.arange(psf_len) - psf_len//2 + cen_o,
-                           stitch)
+                           np.arange(psf_len) - psf_len//2 + cen_o, stitch)
         # Interpolate shifted PSF to native pixel sampling.
         stitch = np.interp(np.arange(dimy+pad),
                            np.linspace(0, (os_factor*(dimy+pad)-1)/os_factor,
-                                       (os_factor*(dimy+pad)-1)+1),
-                           stitch)
+                                       os_factor*(dimy+pad)), stitch)
         new_frame[:, i] = stitch
 
     # For columns where the order 2 core is not distinguishable (due to the
