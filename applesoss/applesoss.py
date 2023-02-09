@@ -194,7 +194,7 @@ def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
     halfwidth : int
         Half-width of the trace in native pixels.
     obs_date : str
-        Date of observations in 'yyyy-mm-dd' format.
+        Date of observations in 'yyyy-mm-dd', or yyyy-mm-ddThh:mm:ss format.
     verbose : int
         Level of verbosity: either 3, 2, 1, or 0.
          3 - show all of progress prints, progress bars, and diagnostic plots.

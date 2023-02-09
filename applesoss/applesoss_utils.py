@@ -25,7 +25,7 @@ def generate_psfs(wave_increment=0.1, npix=400, obs_date=None, verbose=0):
     npix : int
         Size (in native pixels) of the 1D PSFs.
     obs_date : str
-        Date of observations in 'yyyy-mm-dd' format.
+        Date of observations in 'yyyy-mm-dd', or yyyy-mm-ddThh:mm:ss format.
     verbose : int
         Level of verbosity.
     Returns
@@ -53,8 +53,16 @@ def generate_psfs(wave_increment=0.1, npix=400, obs_date=None, verbose=0):
 
     # Get real OTE WFE from date of observations.
     if obs_date is not None:
-        obs_date += 'T00:00:00'
-        niriss.load_wss_opd_by_date(obs_date)
+        try:
+            if 'T' not in obs_date:
+                obs_date += 'T00:00:00'
+            niriss.load_wss_opd_by_date(obs_date, verbose=False)
+        except ValueError:
+            print('Error in specified date.'
+                  'Falling back to default optical models.')
+        except RuntimeError:
+            print('Could not find JWST OPDs for the specified date.'
+                  'Falling back to default optical models.')
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
