@@ -217,8 +217,11 @@ def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
         When the clear dimensions do not match a known subarray.
     """
 
-    if verbose != 0:
-        print('Starting the applesoss module.\n')
+    if empirical is True:
+        mode = 'empirical'
+    else:
+        mode = 'simulation'
+    print('Starting the applesoss module in {} mode.\n'.format(mode))
 
     # ========= INITIAL SETUP =========
     # If subarray is FULL - trim down to SUBSTRIP256 and work with that.
