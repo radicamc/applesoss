@@ -351,6 +351,11 @@ def build_empirical_profile(clear, subarray, pad, oversample, wavemap,
         ii = np.where(~np.isfinite(o))
         o[ii] = 0
 
+    # Smooth over outlier columns.
+    o1_uncontam = smooth_outlier_columns(o1_uncontam)
+    o2_uncontam = smooth_outlier_columns(o2_uncontam)
+    o3_uncontam = smooth_outlier_columns(o3_uncontam)
+
     # Add oversampling.
     if oversample != 1:
         if verbose != 0:
@@ -656,6 +661,55 @@ def reconstruct_order(clear, cen, order, empirical, psfs, halfwidth, pad,
             new_frame[:, i] = working_prof[:dimy+pad]
 
     return new_frame, frame_rect
+
+
+def smooth_outlier_columns(frame, thresh=2):
+    """Identify and smooth over residual outlier columns in the final profiles.
+
+    Parameters
+    ----------
+    frame : array-like
+        2D profile for a single order.
+    thresh : int
+        Sigma threshold to flag a column as an outlier.
+
+    Returns
+    -------
+    fix_frame : array-like
+        2D profile with outlier columns interpolated.
+    """
+
+    fix_frame = np.copy(frame)
+    # Take the difference of each neighbouring column.
+    diff_frame = np.diff(fix_frame, axis=1)
+    # Find the median difference level of each column pair.
+    diff_lvl = np.nanmedian(diff_frame, axis=0)
+    # Find columns where the difference level is overly discrepant. Fix these
+    # columns.
+    ii = np.where(np.abs(diff_lvl) > thresh * np.nanstd(diff_lvl))[0]
+
+    # Find groups of outlier columns
+    chunks = applesoss_utils.find_consecutive(ii)
+    for chunk in chunks:
+        # Interpolate outlier columns using a median of the neighbours.
+        if len(chunk) == 2:
+            col = chunk[1]
+            fix_frame[:, col] = np.median([frame[:, col-1], frame[:, col+1]],
+                                          axis=0)
+        elif len(chunk) == 1:
+            col = chunk[0]
+            fix_frame[:, col] = np.median([frame[:, col-1], frame[:, col+1]],
+                                          axis=0)
+        elif len(chunk) < 5:
+            col_start = chunk[0]
+            col_end = chunk[-1]
+            fix_frame[:, col_start:col_end + 1] = np.median([frame[:, col_start-1], frame[:, col_end+1]], axis=0)[:, None]
+        # Larger bad clumps will have to be treated differently --- curvature
+        # of the trace will probably start to matter.
+        else:
+            continue
+
+    return fix_frame
 
 
 def get_wings(w, psfs, deep, cens, halfwidth, badpix=None, empirical=True,

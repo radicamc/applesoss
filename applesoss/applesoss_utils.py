@@ -15,6 +15,12 @@ import warnings
 import webbpsf
 
 
+def find_consecutive(data, stepsize=1):
+    """Find consecutive values in an array.
+    """
+    return np.split(data, np.where(np.diff(data) != stepsize)[0] + 1)
+
+
 def generate_psfs(wave_increment=0.1, npix=400, obs_date=None, verbose=0):
     """Generate 1D SOSS PSFs across the full 0.5 - 2.9µm range of all orders.
 
