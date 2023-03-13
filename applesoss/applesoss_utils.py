@@ -12,7 +12,10 @@ from astropy.io import fits
 from datetime import datetime
 import numpy as np
 import warnings
-import webbpsf
+try:
+    import webbpsf
+except ModuleNotFoundError:
+    print('WebbPSF not installed. Profile simulation not available.')
 
 
 def find_consecutive(data, stepsize=1):
