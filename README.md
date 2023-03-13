@@ -13,7 +13,7 @@ or the latest development version can be grabbed from GitHub:
 
     git clone https://github.com/radicamc/applesoss
     cd applesoss
-    pip install .
+    python setup.py install
 
 The GitHub version also includes testing data and examples. 
 
