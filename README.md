@@ -18,7 +18,11 @@ or the latest development version can be grabbed from GitHub:
 The GitHub version also includes testing data and examples. 
 
 If you wish to use simulations instead of purely empirical wings to construct the trace profiles, you will need 
-the ```webbpsf``` package; the installation instructions for which can be found [here](https://webbpsf.readthedocs.io/en/latest/installation.html#installing-or-updating-synphot).
+the ```webbpsf``` package, which can be included via the following option during installation:
+
+    pip install applesoss[webbpsf]
+
+Alternatively, its installation instructions can be found [here](https://webbpsf.readthedocs.io/en/latest/installation.html#installing-or-updating-synphot).
 
 
 If you make use of this code, please cite the [APPLESOSS paper](https://ui.adsabs.harvard.edu/abs/2022arXiv220705136R/abstract).

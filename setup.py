@@ -4,7 +4,7 @@
 from setuptools import setup
 
 setup(name='applesoss',
-      version='2.0.1',
+      version='2.0.2',
       license='MIT',
       author='Michael Radica',
       author_email='michael.radica@umontreal.ca',
@@ -15,7 +15,7 @@ setup(name='applesoss',
       package_data={'': ['README.md', 'LICENSE']},
       install_requires=['astropy', 'astroquery', 'matplotlib', 'numpy',
                         'scipy'],
-      extras_requires={'webbpsf': ['webbpsf>=1.1.1']},
+      extras_require={'webbpsf': ['applesoss', 'webbpsf>=1.1.1']},
       classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',

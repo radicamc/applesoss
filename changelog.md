@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+### [2.0.2] -- 2023-07-24
+#### Added
+- Streamline installation process.
+
 ### [2.0.1] -- 2023-07-24
 #### Added
 - Misc. bug fixes.
