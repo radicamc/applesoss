@@ -21,4 +21,4 @@ If you wish to use simulations instead of purely empirical wings to construct th
 the ```webbpsf``` package; the installation instructions for which can be found [here](https://webbpsf.readthedocs.io/en/latest/installation.html#installing-or-updating-synphot).
 
 
-If you make use of this code, please cite the [APPLESOSS paper](https://ui.adsabs.harvard.edu/abs/2022arXiv220705136R/abstract), and [Fournier-Tondreau et al. 2023]().
+If you make use of this code, please cite the [APPLESOSS paper](https://ui.adsabs.harvard.edu/abs/2022arXiv220705136R/abstract).
