@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+### [2.1.0] -- 2023-11-28
+#### Added
+- Edits to edgetrigger functions to allow its use for non-SOSS data.
+
 ### [2.0.2] -- 2023-07-24
 #### Added
 - Streamline installation process.

@@ -65,6 +65,8 @@ def robust_polyfit(x, y, order, maxiter=5, nstd=3.):
         """
         return np.polyval(p, x) - y
 
+    ii = np.where(np.isfinite(y))
+    x, y = x[ii], y[ii]
     mask = np.ones_like(x, dtype='bool')
     for niter in range(maxiter):
 

@@ -291,16 +291,24 @@ def get_centroids_edgetrigger(image, header=None, mask=None, poly_order=11,
     if mask is None:
         mask = np.zeros_like(image, dtype='bool')
 
-    # Call the script that determines the dimensions of the image.
-    result = get_image_dim(image, header=header, verbose=verbose)
-    dimx, dimy, xos, yos, xnative, ynative, padding, refpix_mask = result
+    try:
+        # Call the script that determines the dimensions of the image -- SOSS
+        # specific code.
+        result = get_image_dim(image, header=header, verbose=verbose)
+        dimx, dimy, xos, yos, xnative, ynative, padding, refpix_mask = result
+        # Replace masked pixel values with NaNs.
+        image_masked = np.where(mask | ~refpix_mask, np.nan, image)
+        # Use edge trigger to compute the edges and center of the trace.
+        fkwargs = dict(halfwidth=halfwidth, yos=yos, verbose=verbose,
+                       outdir=outdir)
+    except ValueError:
+        # Will work for any data frame.
+        dimy, dimx = np.shape(image)
+        image_masked = image
+        # Use edge trigger to compute the edges and center of the trace.
+        fkwargs = dict(halfwidth=halfwidth, yos=1, verbose=verbose,
+                       outdir=outdir)
 
-    # Replace masked pixel values with NaNs.
-    image_masked = np.where(mask | ~refpix_mask, np.nan, image)
-
-    # Use edge trigger to compute the edges and center of the trace.
-    fkwargs = dict(halfwidth=halfwidth, yos=yos, verbose=verbose,
-                   outdir=outdir)
     edge_outs = edge_trigger(image_masked, **fkwargs)
     ytrace_max, ytrace_min, ytrace_best, widths_best = edge_outs
 
