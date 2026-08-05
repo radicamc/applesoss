@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+### [2.1.1] -- 2026-08-05
+#### Added
+- Fix bug in pixel masking which caused incompatability with numpy>=2.0.0.
+
 ### [2.1.0] -- 2023-11-28
 #### Added
 - Edits to edgetrigger functions to allow its use for non-SOSS data.

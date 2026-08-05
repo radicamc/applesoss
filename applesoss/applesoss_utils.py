@@ -116,8 +116,9 @@ def generate_superprof(deep, cens, badpix=None, col_start=1850, col_end=2030):
     new = np.zeros((dimy, col_end - col_start))
 
     # Mask any flagged pixels
-    ii = np.where(badpix != 0)
-    deep[ii] = np.nan
+    if badpix is not None:
+        ii = np.where(badpix != 0)
+        deep[ii] = np.nan
 
     # Loop over all columns to consider. Rectify the trace by interpolating
     # the profiles to a common centroid.
